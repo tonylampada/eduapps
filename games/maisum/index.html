@@ -15,10 +15,35 @@
 
   .back { position: absolute; top: 16px; left: 20px; font-size: 1.5rem; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; color: inherit; }
 
-  #start-screen h1 { font-size: clamp(3rem, 10vw, 6rem); color: #ff7043; margin: 0; font-weight: 900; letter-spacing: -2px; }
-  #start-screen .hero { font-size: clamp(4rem, 12vw, 7rem); margin: 30px 0; }
+  #start-screen h1 { font-size: clamp(2.5rem, 8vw, 5rem); color: #ff7043; margin: 0; font-weight: 900; letter-spacing: -2px; }
+  #start-screen .hero { font-size: clamp(3rem, 9vw, 5rem); margin: 16px 0; }
+
+  .config { display: flex; flex-direction: column; gap: 14px; width: min(420px, 92vw); margin-bottom: 24px; }
+  .config-group { background: rgba(255,255,255,0.75); border-radius: 18px; padding: 14px 16px; }
+  .config-label { font-size: 0.95rem; font-weight: 800; color: #7b6f5e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .levels { display: flex; gap: 8px; }
+  .level-btn {
+    flex: 1; background: white; border: 3px solid transparent; border-radius: 14px;
+    padding: 10px 6px; cursor: pointer; font-weight: 800; font-size: 0.95rem; color: #7b6f5e;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .level-btn .lvl-num { font-size: 1.4rem; color: #29b6f6; }
+  .level-btn .lvl-desc { font-size: 0.75rem; opacity: 0.8; }
+  .level-btn.active { border-color: #29b6f6; background: #e1f5fe; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .toggle-row + .toggle-row { border-top: 1px solid rgba(0,0,0,0.06); }
+  .toggle-row label { font-size: 1rem; font-weight: 700; color: #5d5345; }
+  .switch { position: relative; width: 52px; height: 30px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: #cfd8dc; border-radius: 30px; cursor: pointer; transition: 0.2s; }
+  .slider::before { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .switch input:checked + .slider { background: #66bb6a; }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+
   #start-btn {
-    font-size: clamp(1.5rem, 4vw, 2.5rem); padding: 20px 60px; background: #66bb6a; color: white;
+    font-size: clamp(1.5rem, 4vw, 2.5rem); padding: 16px 50px; background: #66bb6a; color: white;
     border: none; border-radius: 30px; box-shadow: 0 8px 0 #4a9c4f; cursor: pointer; font-weight: 800;
   }
   #start-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #4a9c4f; }
@@ -31,6 +56,7 @@
   .stars { min-height: 2rem; letter-spacing: 4px; flex: 1; text-align: center; }
   .progress { font-size: 1.2rem; font-weight: 800; color: #7b6f5e; background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 20px; }
   .icon-btn { background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 48px; height: 48px; font-size: 1.5rem; cursor: pointer; flex-shrink: 0; }
+  .icon-btn[hidden] { display: none; }
 
   .problem {
     display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: clamp(10px, 2vw, 30px);
@@ -54,20 +80,24 @@
     line-height: 1.1;
   }
   .numeral { color: #29b6f6; }
-  .question { color: #ab47bc; animation: wobble 1.5s ease-in-out infinite; }
+  .question { color: #ab47bc; animation: wobble 1.5s ease-in-out infinite; transition: background 0.2s, transform 0.2s; }
+  .question.drop-hover { background: #fff9c4; transform: scale(1.1); animation: none; }
+  .question.correct { background: #c8e6c9; color: #2e7d32; animation: celebrate 0.6s ease; }
 
   .choices {
     display: flex; gap: clamp(12px, 2vw, 24px); flex-wrap: wrap; justify-content: center;
+    touch-action: none;
   }
   .choice {
     font-size: clamp(3rem, 7vw, 5rem); font-weight: 900; color: white;
     background: #29b6f6; border: none; border-radius: 28px;
     padding: clamp(20px, 3vh, 30px) clamp(40px, 6vw, 60px); min-width: clamp(120px, 15vw, 180px);
-    cursor: pointer; box-shadow: 0 8px 0 #0288d1; transition: transform 0.1s, box-shadow 0.1s;
+    cursor: grab; box-shadow: 0 8px 0 #0288d1; transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    touch-action: none;
   }
-  .choice:active { transform: translateY(6px); box-shadow: 0 2px 0 #0288d1; }
-  .choice.correct { background: #66bb6a; box-shadow: 0 8px 0 #4a9c4f; animation: celebrate 0.6s ease; }
+  .choice.dragging { cursor: grabbing; box-shadow: 0 12px 24px rgba(0,0,0,0.25); transform: scale(1.1); z-index: 10; position: relative; }
   .choice.wrong { background: #e0e0e0; color: #9e9e9e; box-shadow: 0 8px 0 #bdbdbd; animation: shake 0.4s; }
+  .choice.used { opacity: 0; pointer-events: none; }
 
   @keyframes pop { from { transform: scale(0) rotate(-180deg); } to { transform: scale(1) rotate(0); } }
   @keyframes celebrate { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25) rotate(-3deg); } }
@@ -90,6 +120,34 @@
   <a class="back" href="../../" aria-label="Voltar">←</a>
   <h1>Mais Um!</h1>
   <div class="hero">🦕 ➕ 1️⃣</div>
+
+  <div class="config">
+    <div class="config-group">
+      <div class="config-label">Nível</div>
+      <div class="levels" id="levels">
+        <button class="level-btn" data-level="1"><span class="lvl-num">1</span><span class="lvl-desc">só imagens</span></button>
+        <button class="level-btn" data-level="2"><span class="lvl-num">2</span><span class="lvl-desc">imagens + 1</span></button>
+        <button class="level-btn" data-level="3"><span class="lvl-num">3</span><span class="lvl-desc">misturado</span></button>
+      </div>
+    </div>
+
+    <div class="config-group">
+      <div class="config-label">Áudio</div>
+      <div class="toggle-row">
+        <label for="cfg-music">Música de fundo</label>
+        <label class="switch" for="cfg-music"><input type="checkbox" id="cfg-music"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label for="cfg-prompt">Voz: pergunta</label>
+        <label class="switch" for="cfg-prompt"><input type="checkbox" id="cfg-prompt"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label for="cfg-feedback">Voz: resposta</label>
+        <label class="switch" for="cfg-feedback"><input type="checkbox" id="cfg-feedback"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
   <button id="start-btn">Começar</button>
 </div>
 
@@ -160,17 +218,58 @@ const WRONG = [
 ];
 
 const TOTAL_ROUNDS = 10;
+const CFG_KEY = 'maisum.cfg.v1';
+const DEFAULT_CFG = { level: 1, music: false, voicePrompt: true, voiceFeedback: true };
+
+let cfg = loadCfg();
 let score = 0;
 let round = 0;
 let answered = false;
 let firstTry = true;
 let currentGender = 'm';
 
+function loadCfg() {
+  try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; }
+  catch { return { ...DEFAULT_CFG }; }
+}
+function saveCfg() { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+
+function sayPrompt(text) { if (cfg.voicePrompt) speak(text); }
+function sayFeedback(text) { if (cfg.voiceFeedback) speak(text); }
+
+function applyCfgToStartUI() {
+  document.querySelectorAll('.level-btn').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.level) === cfg.level);
+  });
+  document.getElementById('cfg-music').checked = cfg.music;
+  document.getElementById('cfg-prompt').checked = cfg.voicePrompt;
+  document.getElementById('cfg-feedback').checked = cfg.voiceFeedback;
+}
+
+document.querySelectorAll('.level-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    cfg.level = Number(b.dataset.level);
+    saveCfg();
+    applyCfgToStartUI();
+  });
+});
+document.getElementById('cfg-music').addEventListener('change', e => { cfg.music = e.target.checked; saveCfg(); });
+document.getElementById('cfg-prompt').addEventListener('change', e => { cfg.voicePrompt = e.target.checked; saveCfg(); });
+document.getElementById('cfg-feedback').addEventListener('change', e => { cfg.voiceFeedback = e.target.checked; saveCfg(); });
+applyCfgToStartUI();
+
 function renderGroup(n, obj) {
   let html = '<div class="group">';
   for (let i = 0; i < n; i++) html += `<span class="item">${obj}</span>`;
   html += '</div>';
   return html;
+}
+
+function pickMode() {
+  // 1: só imagens; 2: imagens + algarismo "1"; 3: mistura (rotaciona pelos 3)
+  if (cfg.level === 1) return 1;
+  if (cfg.level === 2) return 2;
+  return ((round - 1) % 3) + 1;
 }
 
 function nextProblem() {
@@ -188,32 +287,28 @@ function nextProblem() {
   const word = (k) => num(k, g);
   const noun = (k) => k === 1 ? obj.singular : obj.plural;
 
-  const mode = round % 3;
+  const mode = pickMode();
   let problemHTML, prompt;
 
   if (mode === 1) {
-    // objetos + objetos
     problemHTML =
       renderGroup(n, obj.emoji) + '<span class="plus">+</span>' +
-      renderGroup(1, obj.emoji) + '<span class="equals">=</span><span class="question">?</span>';
+      renderGroup(1, obj.emoji) + '<span class="equals">=</span><span class="question" id="dropzone">?</span>';
     prompt = `${word(n)} ${noun(n)} mais ${word(1)}. ${pick(QUESTIONS)(g)}`;
   } else if (mode === 2) {
-    // objetos + algarismo "1"
     problemHTML =
       renderGroup(n, obj.emoji) + '<span class="plus">+</span><span class="numeral">1</span>' +
-      '<span class="equals">=</span><span class="question">?</span>';
+      '<span class="equals">=</span><span class="question" id="dropzone">?</span>';
     prompt = `${word(n)} ${noun(n)} mais ${word(1)}. ${pick(QUESTIONS)(g)}`;
   } else {
-    // algarismo N + 1 objeto
     problemHTML =
       `<span class="numeral">${n}</span><span class="plus">+</span>` +
-      renderGroup(1, obj.emoji) + '<span class="equals">=</span><span class="question">?</span>';
+      renderGroup(1, obj.emoji) + '<span class="equals">=</span><span class="question" id="dropzone">?</span>';
     prompt = `${word(n)} mais ${word(1)} ${noun(1)}. ${pick(QUESTIONS)(g)}`;
   }
 
   document.getElementById('problem').innerHTML = problemHTML;
 
-  // escolhas: correta + 2 distratores próximos
   const choices = new Set([answer]);
   while (choices.size < 3) {
     const offset = pick([-2, -1, 1, 2]);
@@ -228,29 +323,96 @@ function nextProblem() {
     const btn = document.createElement('button');
     btn.className = 'choice';
     btn.textContent = c;
-    btn.onclick = () => pickAnswer(c, answer, btn);
+    btn.dataset.value = c;
+    attachDrag(btn, answer);
     choicesEl.appendChild(btn);
   });
 
-  setTimeout(() => speak(prompt), 350);
+  setTimeout(() => sayPrompt(prompt), 350);
 }
 
-function pickAnswer(picked, correct, btn) {
+// drag & drop (pointer events: funciona mouse + touch)
+function attachDrag(btn, correct) {
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let origX = 0, origY = 0;
+  let pointerId = null;
+
+  const onDown = (e) => {
+    if (answered || btn.disabled) return;
+    dragging = true;
+    pointerId = e.pointerId;
+    btn.setPointerCapture(pointerId);
+    const rect = btn.getBoundingClientRect();
+    origX = rect.left; origY = rect.top;
+    startX = e.clientX; startY = e.clientY;
+    btn.classList.add('dragging');
+    btn.style.transition = 'none';
+    e.preventDefault();
+  };
+
+  const intersects = () => {
+    const dz = document.getElementById('dropzone');
+    if (!dz) return false;
+    const a = btn.getBoundingClientRect();
+    const b = dz.getBoundingClientRect();
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  };
+
+  const onMove = (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    btn.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+
+    const dz = document.getElementById('dropzone');
+    if (dz) dz.classList.toggle('drop-hover', intersects());
+  };
+
+  const onUp = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    btn.releasePointerCapture(pointerId);
+    btn.classList.remove('dragging');
+    btn.style.transition = '';
+
+    const dz = document.getElementById('dropzone');
+    const over = intersects();
+    dz.classList.remove('drop-hover');
+
+    if (over) {
+      handleDrop(Number(btn.dataset.value), correct, btn, dz);
+    } else {
+      btn.style.transform = '';
+    }
+  };
+
+  btn.addEventListener('pointerdown', onDown);
+  btn.addEventListener('pointermove', onMove);
+  btn.addEventListener('pointerup', onUp);
+  btn.addEventListener('pointercancel', onUp);
+}
+
+function handleDrop(picked, correct, btn, dz) {
   if (answered) return;
   if (picked === correct) {
     answered = true;
-    btn.classList.add('correct');
+    dz.textContent = picked;
+    dz.classList.add('correct');
+    btn.classList.add('used');
+    btn.style.transform = '';
     playSuccess();
     confettiBurst();
     if (firstTry) { score++; updateStars(); }
-    setTimeout(() => speak(pick(SUCCESS)(num(correct, currentGender))), 100);
+    setTimeout(() => sayFeedback(pick(SUCCESS)(num(correct, currentGender))), 100);
     setTimeout(nextProblem, 2400);
   } else {
     firstTry = false;
     btn.classList.add('wrong');
     btn.disabled = true;
+    btn.style.transform = '';
     playWrong();
-    setTimeout(() => speak(pick(WRONG)), 100);
+    setTimeout(() => sayFeedback(pick(WRONG)), 100);
   }
 }
 
@@ -274,15 +436,14 @@ function endGame() {
   document.getElementById('end-score').innerHTML = `${'⭐'.repeat(score)}${'☆'.repeat(TOTAL_ROUNDS - score)}<br>${score} de ${TOTAL_ROUNDS}`;
 
   if (score >= 7) { confettiBurst(); setTimeout(confettiBurst, 400); setTimeout(confettiBurst, 800); }
-  setTimeout(() => speak(`${title} ${phrase} Você acertou ${score} de ${TOTAL_ROUNDS}.`), 300);
+  setTimeout(() => sayFeedback(`${title} ${phrase} Você acertou ${score} de ${TOTAL_ROUNDS}.`), 300);
 }
 
 function resetGame() {
   score = 0; round = 0; firstTry = true; answered = false;
   updateStars();
   document.getElementById('end-screen').style.display = 'none';
-  document.getElementById('game-screen').style.display = 'flex';
-  nextProblem();
+  document.getElementById('start-screen').style.display = 'flex';
 }
 
 document.getElementById('start-btn').addEventListener('click', () => {
@@ -290,7 +451,17 @@ document.getElementById('start-btn').addEventListener('click', () => {
   document.getElementById('game-screen').style.display = 'flex';
   ensureCtx();
   warmup();
-  startMusic();
+  const musicBtn = document.getElementById('music-toggle');
+  if (cfg.music) {
+    startMusic();
+    musicBtn.textContent = '🎵';
+    musicBtn.hidden = false;
+  } else {
+    stopMusic();
+    musicBtn.hidden = true;
+  }
+  score = 0; round = 0;
+  updateStars();
   nextProblem();
 });
 

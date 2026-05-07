@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triagem prática de suporte no TEA</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #eef1f5;
+    --card: #ffffff;
+    --text: #172033;
+    --muted: #667085;
+    --line: #d7dce5;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-soft: #e8f0ff;
+    --warning: #fff7ed;
+    --warning-line: #fed7aa;
+    --danger: #b42318;
+    --ok: #0f766e;
+    --shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+  }
+
+  .wrap {
+    width: min(980px, calc(100% - 28px));
+    margin: 24px auto;
+    background: var(--card);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  header {
+    padding: 28px 22px;
+    background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+    color: white;
+  }
+
+  h1 { margin: 0 0 10px; font-size: clamp(1.7rem, 5vw, 2.7rem); line-height: 1.05; }
+  header p { margin: 0; font-size: 1rem; opacity: 0.96; max-width: 760px; }
+
+  main { padding: 22px; }
+
+  .notice {
+    border: 1px solid var(--warning-line);
+    background: var(--warning);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    color: #7c2d12;
+    font-weight: 650;
+  }
+
+  .domain-title {
+    margin: 28px 0 12px;
+    font-size: 1.2rem;
+    color: #0f172a;
+  }
+
+  .question-card {
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #fff;
+  }
+
+  .question-text { font-weight: 800; margin-bottom: 6px; }
+  .example { color: var(--muted); font-size: 0.94rem; margin: 0 0 12px; }
+
+  .options { display: grid; gap: 10px; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    border: 2px solid var(--line);
+    background: #fff;
+    color: var(--text);
+    border-radius: 16px;
+    padding: 13px 14px;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .08s;
+  }
+  .option:active { transform: scale(0.99); }
+  .option.selected { border-color: var(--primary); background: var(--primary-soft); }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #1e40af;
+    font-weight: 900;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 26px 0 8px;
+  }
+
+  button.big {
+    border: 0;
+    border-radius: 16px;
+    padding: 15px 16px;
+    min-height: 54px;
+    font-size: 1rem;
+    font-weight: 850;
+    cursor: pointer;
+  }
+  .primary { background: var(--primary); color: white; }
+  .primary:hover { background: var(--primary-dark); }
+  .secondary { background: #e5e7eb; color: #111827; }
+
+  #result {
+    display: none;
+    margin-top: 24px;
+    border: 2px solid #bfdbfe;
+    background: #f8fbff;
+    border-radius: 24px;
+    padding: 18px;
+  }
+  #result.show { display: block; }
+  #result h2 { margin: 0 0 12px; font-size: 1.7rem; }
+
+  .score-box {
+    background: white;
+    border-radius: 18px;
+    padding: 14px;
+    margin: 12px 0;
+    border: 1px solid #dbeafe;
+  }
+  .total { font-size: 1.4rem; font-weight: 900; color: var(--primary-dark); }
+  .classification { font-weight: 900; margin-top: 8px; }
+
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; min-width: 580px; background: white; border-radius: 14px; overflow: hidden; }
+  th, td { border-bottom: 1px solid #e5e7eb; padding: 11px; text-align: left; }
+  th { background: #eff6ff; color: #1e3a8a; }
+  tr:last-child td { border-bottom: 0; }
+
+  .explanation, .drivers, .critical-note {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px;
+    margin: 12px 0;
+  }
+  .critical-note { border-color: #fecaca; color: var(--danger); background: #fffafa; }
+  ul { padding-left: 22px; margin: 8px 0 0; }
+
+  .copy-status { color: var(--ok); font-weight: 800; min-height: 22px; margin-top: 8px; }
+
+  @media (max-width: 640px) {
+    .wrap { width: 100%; min-height: 100vh; margin: 0; border-radius: 0; }
+    main, header { padding-left: 16px; padding-right: 16px; }
+    .actions { grid-template-columns: 1fr; }
+    .question-card { padding: 14px; }
+    .option { padding: 14px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Triagem prática de suporte no TEA</h1>
+    <p>Questionário local para organizar informações sobre comunicação, socialização, escola, regulação, autonomia e suporte diário.</p>
+  </header>
+
+  <main>
+    <div class="notice">Importante: isto não é diagnóstico médico. O resultado é apenas uma estimativa aproximada de perfil de suporte.</div>
+
+    <form id="quiz" novalidate></form>
+
+    <div class="actions">
+      <button class="big primary" type="button" id="calculate">Calcular resultado</button>
+      <button class="big secondary" type="button" id="clear">Limpar respostas</button>
+    </div>
+
+    <section id="result" aria-live="polite"></section>
+  </main>
+</div>
+
+<script>
+const domains = [
+  { key: 'comunicacao', name: 'Comunicação', max: 8, questions: [
+    ['Ele conversa de forma funcional?', null, ['Sim', 'Parcialmente', 'Não']],
+    ['Ele consegue contar coisas que aconteceram?', null, ['Sim', 'Às vezes', 'Não']],
+    ['Ele entende instruções com 2 etapas?', 'Exemplo: “pegue o tênis no quarto e traga aqui”.', ['Sim', 'Parcialmente', 'Não']],
+    ['A fala dele parece natural?', null, ['Sim', 'Um pouco repetitiva/robotizada', 'Muito repetitiva/diferente']]
+  ]},
+  { key: 'social', name: 'Social', max: 8, questions: [
+    ['Ele demonstra interesse por outras crianças?', null, ['Sim', 'Pouco', 'Não']],
+    ['Ele consegue brincar junto?', null, ['Sim', 'Às vezes', 'Prefere sozinho']],
+    ['Ele faz contato visual naturalmente?', null, ['Natural', 'Pouco', 'Muito pouco']],
+    ['Ele compartilha interesses espontaneamente?', 'Exemplo: “olha isso!”, mostrar algo legal.', ['Sim', 'Às vezes', 'Não']]
+  ]},
+  { key: 'escola', name: 'Escola', max: 6, questions: [
+    ['Ele acompanha o conteúdo escolar?', null, ['Sim', 'Parcialmente', 'Não']],
+    ['Ele precisa de acompanhante terapêutico ou suporte constante?', null, ['Não', 'Às vezes', 'Sim']],
+    ['A escola consegue manejar ele relativamente bem?', null, ['Sim', 'Com dificuldade', 'Não']]
+  ]},
+  { key: 'regulacao', name: 'Regulação e comportamento', max: 8, questions: [
+    ['Ele tem crises intensas?', null, ['Raras', 'Moderadas', 'Frequentes/intensas']],
+    ['Mudanças de rotina afetam muito?', null, ['Pouco', 'Moderadamente', 'Muito']],
+    ['Ele tem comportamentos repetitivos intensos?', null, ['Pouco', 'Moderado', 'Muito']],
+    ['Ele tem sensibilidades sensoriais importantes?', null, ['Pouco', 'Moderado', 'Muito']]
+  ]},
+  { key: 'autonomia', name: 'Autonomia', max: 8, questions: [
+    ['Ele come sozinho?', null, ['Sim', 'Com ajuda', 'Não']],
+    ['Ele usa banheiro?', null, ['Sim', 'Parcialmente', 'Não']],
+    ['Ele consegue se vestir parcialmente?', null, ['Sim', 'Com ajuda', 'Não']],
+    ['Ele entende perigo?', 'Exemplo: rua, carro, fugir, se machucar.', ['Sim', 'Parcialmente', 'Não']]
+  ]},
+  { key: 'visao', name: 'Visão geral', max: 4, questions: [
+    ['Quanto suporte ele precisa no dia a dia?', null, ['Pequeno suporte', 'Suporte moderado', 'Suporte intenso/constante']],
+    ['Comparando com outras crianças autistas que você conhece, ele parece:', null, ['Mais leve', 'Moderado', 'Mais severo']]
+  ]}
+];
+
+const quiz = document.getElementById('quiz');
+const result = document.getElementById('result');
+const answers = {};
+let flatQuestions = [];
+let lastResultText = '';
+
+function renderQuiz() {
+  let number = 1;
+  domains.forEach(domain => {
+    const h = document.createElement('h2');
+    h.className = 'domain-title';
+    h.textContent = domain.name;
+    quiz.appendChild(h);
+
+    domain.questions.forEach(q => {
+      const id = number;
+      flatQuestions.push({ id, domain: domain.key, domainName: domain.name, text: q[0], options: q[2] });
+
+      const card = document.createElement('section');
+      card.className = 'question-card';
+      card.dataset.question = id;
+      card.innerHTML = `
+        <div class="question-text">${id}. ${q[0]}</div>
+        ${q[1] ? `<p class="example">${q[1]}</p>` : ''}
+        <div class="options">
+          ${q[2].map((opt, index) => `
+            <button class="option" type="button" data-question="${id}" data-value="${index}">
+              <span class="badge">${String.fromCharCode(65 + index)}</span>
+              <span>${opt}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      quiz.appendChild(card);
+      number++;
+    });
+  });
+}
+
+function interpret(score, max) {
+  if (max === 8) {
+    if (score <= 2) return 'suporte leve nesse domínio';
+    if (score <= 5) return 'suporte moderado nesse domínio';
+    return 'suporte substancial nesse domínio';
+  }
+  if (max === 6) {
+    if (score <= 1) return 'suporte leve';
+    if (score <= 4) return 'suporte moderado';
+    return 'suporte substancial';
+  }
+  if (score <= 1) return 'suporte leve';
+  if (score === 2) return 'suporte moderado';
+  return 'suporte substancial';
+}
+
+function baseClassification(total) {
+  if (total <= 13) return 'Perfil mais compatível com suporte leve / nível 1.';
+  if (total <= 22) return 'Perfil misto: nível 1 com suporte relevante ou possível nível 2.';
+  if (total <= 32) return 'Perfil mais compatível com suporte substancial / nível 2.';
+  return 'Perfil com necessidade muito substancial de suporte / possível nível 3.';
+}
+
+function calculate() {
+  if (Object.keys(answers).length !== 21) {
+    alert('Responda todas as perguntas antes de calcular.');
+    return;
+  }
+
+  const domainScores = {};
+  domains.forEach(d => domainScores[d.key] = 0);
+  flatQuestions.forEach(q => domainScores[q.domain] += answers[q.id]);
+
+  const total = Object.values(domainScores).reduce((sum, value) => sum + value, 0);
+  const classification = baseClassification(total);
+
+  const possibleLevel3Triggers = [
+    domainScores.comunicacao >= 6,
+    domainScores.autonomia >= 6,
+    domainScores.visao >= 3,
+    answers[1] === 2,
+    answers[16] === 2,
+    answers[17] === 2,
+    answers[19] === 2,
+    answers[20] === 2
+  ].filter(Boolean).length;
+
+  const notes = [];
+  if (possibleLevel3Triggers >= 3) {
+    notes.push('Há sinais de necessidade muito substancial de suporte em áreas centrais. O perfil pode se aproximar de nível 3, especialmente se essas dificuldades forem consistentes no dia a dia.');
+  }
+
+  if (total >= 14 && total <= 22 && (
+    domainScores.comunicacao >= 6 || domainScores.regulacao >= 6 || domainScores.autonomia >= 6 || domainScores.escola >= 5
+  )) {
+    notes.push('Embora a pontuação total esteja em faixa intermediária, há pelo menos um domínio com necessidade substancial de suporte. Isso pode indicar perfil misto, com características de nível 2 em áreas específicas.');
+  }
+
+  if (domainScores.comunicacao <= 5 && domainScores.autonomia <= 5 && domainScores.visao <= 2) {
+    notes.push('O padrão não sugere nível 3 global, porque comunicação, autonomia e suporte diário não aparecem como muito substancialmente comprometidos pelas respostas.');
+  }
+
+  const rows = domains.map(d => ({
+    name: d.name,
+    score: domainScores[d.key],
+    max: d.max,
+    interpretation: interpret(domainScores[d.key], d.max)
+  }));
+
+  const drivers = rows.filter(r => r.interpretation.includes('moderado') || r.interpretation.includes('substancial'));
+
+  lastResultText = buildPlainText(total, classification, rows, notes, drivers);
+  renderResult(total, classification, rows, notes, drivers);
+  result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildPlainText(total, classification, rows, notes, drivers) {
+  return [
+    'Resultado aproximado',
+    `Pontuação total: ${total}/42`,
+    `Classificação aproximada: ${classification}`,
+    '',
+    'Resultado por domínio:',
+    ...rows.map(r => `- ${r.name}: ${r.score}/${r.max} — ${r.interpretation}`),
+    '',
+    'Texto explicativo:',
+    'O resultado deve ser interpretado como organização prática das informações, não como diagnóstico.',
+    'O nível no TEA depende da necessidade real de suporte no dia a dia e pode variar por ambiente.',
+    'Uma criança pode ter nível leve em comunicação, mas suporte substancial em regulação ou escola.',
+    ...notes.map(n => `\n${n}`),
+    '',
+    'Domínios que puxaram o resultado para cima:',
+    drivers.length ? drivers.map(d => `- ${d.name}: ${d.interpretation} (${d.score}/${d.max})`).join('\n') : '- Nenhum domínio ficou em faixa moderada ou substancial.',
+    '',
+    'Aviso: este questionário não substitui avaliação profissional.'
+  ].join('\n');
+}
+
+function renderResult(total, classification, rows, notes, drivers) {
+  result.className = 'show';
+  result.innerHTML = `
+    <h2>Resultado aproximado</h2>
+    <div class="score-box">
+      <div class="total">Pontuação total: ${total}/42</div>
+      <div class="classification">Classificação aproximada: ${classification}</div>
+    </div>
+
+    ${notes.map(n => `<div class="critical-note">${n}</div>`).join('')}
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Domínio</th><th>Pontuação</th><th>Máximo</th><th>Interpretação</th></tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `<tr><td>${r.name}</td><td>${r.score}</td><td>${r.max}</td><td>${r.interpretation}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="explanation">
+      <p>O resultado deve ser interpretado como organização prática das informações, não como diagnóstico.</p>
+      <p>O nível no TEA depende da necessidade real de suporte no dia a dia e pode variar por ambiente.</p>
+      <p>Uma criança pode ter nível leve em comunicação, mas suporte substancial em regulação ou escola.</p>
+      <p><strong>Aviso:</strong> este questionário não substitui avaliação profissional.</p>
+    </div>
+
+    <div class="drivers">
+      <strong>Domínios que puxaram o resultado para cima:</strong>
+      ${drivers.length ? `<ul>${drivers.map(d => `<li>${d.name}: ${d.interpretation} (${d.score}/${d.max})</li>`).join('')}</ul>` : '<p>Nenhum domínio ficou em faixa moderada ou substancial.</p>'}
+    </div>
+
+    <div class="actions">
+      <button class="big primary" type="button" id="copy">Copiar resultado</button>
+      <button class="big secondary" type="button" id="clearResult">Limpar respostas</button>
+    </div>
+    <div class="copy-status" id="copyStatus"></div>
+  `;
+
+  document.getElementById('copy').addEventListener('click', copyResult);
+  document.getElementById('clearResult').addEventListener('click', clearAll);
+}
+
+async function copyResult() {
+  const status = document.getElementById('copyStatus');
+  try {
+    await navigator.clipboard.writeText(lastResultText);
+    status.textContent = 'Resultado copiado.';
+  } catch (err) {
+    const area = document.createElement('textarea');
+    area.value = lastResultText;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    document.body.removeChild(area);
+    status.textContent = 'Resultado copiado.';
+  }
+}
+
+function clearAll() {
+  Object.keys(answers).forEach(k => delete answers[k]);
+  document.querySelectorAll('.option.selected').forEach(el => el.classList.remove('selected'));
+  result.className = '';
+  result.innerHTML = '';
+  lastResultText = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+renderQuiz();
+quiz.addEventListener('click', event => {
+  const button = event.target.closest('.option');
+  if (!button) return;
+  const question = Number(button.dataset.question);
+  const value = Number(button.dataset.value);
+  answers[question] = value;
+  document.querySelectorAll(`.option[data-question="${question}"]`).forEach(el => el.classList.remove('selected'));
+  button.classList.add('selected');
+});
+
+document.getElementById('calculate').addEventListener('click', calculate);
+document.getElementById('clear').addEventListener('click', clearAll);
+</script>
+</body>
+</html>

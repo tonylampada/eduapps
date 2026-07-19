@@ -7,8 +7,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        home:   resolve(__dirname, 'index.html'),
-        maisum: resolve(__dirname, 'games/maisum/index.html'),
+        home:          resolve(__dirname, 'index.html'),
+        maisum:        resolve(__dirname, 'games/maisum/index.html'),
+        primeiraletra: resolve(__dirname, 'games/primeiraletra/index.html'),
       },
     },
   },

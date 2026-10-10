@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Conta e Arrasta</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: -apple-system, "SF Pro Rounded", system-ui, sans-serif; background: linear-gradient(135deg, #fef3e2 0%, #e8f4f8 50%, #f3e5f5 100%); }
+
+  #start-screen, #game-screen {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+  }
+
+  .back { position: absolute; top: 16px; left: 20px; font-size: 1.5rem; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; color: inherit; }
+
+  #start-screen h1 { font-size: clamp(2.5rem, 8vw, 5rem); color: #ff7043; margin: 0; font-weight: 900; letter-spacing: -2px; text-align: center; }
+  #start-screen .hero { font-size: clamp(3rem, 9vw, 5rem); margin: 16px 0; }
+
+  .config { display: flex; flex-direction: column; gap: 14px; width: min(420px, 92vw); margin-bottom: 24px; }
+  .config-group { background: rgba(255,255,255,0.75); border-radius: 18px; padding: 14px 16px; }
+  .config-label { font-size: 0.95rem; font-weight: 800; color: #7b6f5e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .levels { display: flex; gap: 8px; }
+  .level-btn {
+    flex: 1; background: white; border: 3px solid transparent; border-radius: 14px;
+    padding: 10px 6px; cursor: pointer; font-weight: 800; font-size: 0.95rem; color: #7b6f5e;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .level-btn .lvl-num { font-size: 1.4rem; color: #29b6f6; }
+  .level-btn .lvl-desc { font-size: 0.75rem; opacity: 0.8; }
+  .level-btn.active { border-color: #29b6f6; background: #e1f5fe; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .toggle-row + .toggle-row { border-top: 1px solid rgba(0,0,0,0.06); }
+  .toggle-row label { font-size: 1rem; font-weight: 700; color: #5d5345; }
+  .switch { position: relative; width: 52px; height: 30px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: #cfd8dc; border-radius: 30px; cursor: pointer; transition: 0.2s; }
+  .slider::before { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .switch input:checked + .slider { background: #66bb6a; }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+
+  #start-btn {
+    font-size: clamp(1.5rem, 4vw, 2.5rem); padding: 16px 50px; background: #66bb6a; color: white;
+    border: none; border-radius: 30px; box-shadow: 0 8px 0 #4a9c4f; cursor: pointer; font-weight: 800;
+  }
+  #start-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #4a9c4f; }
+
+  #game-screen { display: none; }
+
+  .topbar {
+    position: absolute; top: 16px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 1.8rem; gap: 12px;
+  }
+  .stars { min-height: 2rem; letter-spacing: 4px; flex: 1; text-align: center; }
+  .progress { font-size: 1.2rem; font-weight: 800; color: #7b6f5e; background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 20px; }
+  .icon-btn { background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 48px; height: 48px; font-size: 1.5rem; cursor: pointer; flex-shrink: 0; }
+  .icon-btn[hidden] { display: none; }
+
+  .problem {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 2vh, 30px);
+    margin-bottom: clamp(20px, 4vh, 50px); min-height: 220px;
+  }
+  .group {
+    display: flex; flex-wrap: wrap; gap: clamp(6px, 2vw, 14px); justify-content: center;
+    max-width: min(60vw, 520px);
+  }
+  .group .item {
+    font-size: clamp(3rem, 11vw, 6rem); animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    line-height: 1;
+  }
+
+  .basket-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .basket {
+    display: flex; align-items: center; justify-content: center;
+    width: clamp(180px, 35vw, 260px); height: clamp(120px, 24vw, 180px);
+    background: white; border-radius: 28px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.08), 0 10px 20px rgba(0,0,0,0.06);
+    font-size: clamp(3rem, 9vw, 5rem); line-height: 1.1;
+    color: #ab47bc;
+    position: relative;
+    transition: background 0.2s, transform 0.2s;
+    animation: wobble 1.5s ease-in-out infinite;
+  }
+  .basket::before {
+    content: '🧺'; position: absolute; top: 8px; right: 12px; font-size: clamp(2rem, 6vw, 3rem);
+    filter: saturate(0.7);
+  }
+  .basket.drop-hover { background: #fff9c4; transform: scale(1.05); animation: none; }
+  .basket.correct { background: #c8e6c9; color: #2e7d32; animation: celebrate 0.6s ease; }
+  .hint { font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 800; color: #7b6f5e; }
+
+  .choices {
+    display: flex; gap: clamp(12px, 2vw, 24px); flex-wrap: wrap; justify-content: center;
+    touch-action: none;
+  }
+  .choice {
+    font-size: clamp(3rem, 8vw, 5rem); font-weight: 900; color: white;
+    background: #29b6f6; border: none; border-radius: 28px;
+    padding: clamp(20px, 3vh, 30px) clamp(40px, 6vw, 60px); min-width: clamp(120px, 15vw, 180px);
+    cursor: grab; box-shadow: 0 8px 0 #0288d1; transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    touch-action: none;
+  }
+  .choice.dragging { cursor: grabbing; box-shadow: 0 12px 24px rgba(0,0,0,0.25); transform: scale(1.1); z-index: 10; position: relative; }
+  .choice.wrong { background: #e0e0e0; color: #9e9e9e; box-shadow: 0 8px 0 #bdbdbd; animation: shake 0.4s; }
+  .choice.used { opacity: 0; pointer-events: none; }
+
+  @keyframes pop { from { transform: scale(0) rotate(-180deg); } to { transform: scale(1) rotate(0); } }
+  @keyframes celebrate { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25) rotate(-3deg); } }
+  @keyframes wobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+  .confetti { position: fixed; pointer-events: none; font-size: 2rem; animation: fall 1.2s ease-out forwards; }
+  @keyframes fall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+
+  #end-screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+  #end-title { font-size: clamp(2.5rem, 7vw, 4.5rem); color: #ff7043; margin: 10px 0; font-weight: 900; }
+  #end-score { font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 900; color: #ab47bc; margin: 20px 0 30px; letter-spacing: 2px; }
+  #replay-btn { font-size: clamp(1.5rem, 4vw, 2.2rem); padding: 20px 50px; background: #66bb6a; color: white; border: none; border-radius: 30px; box-shadow: 0 8px 0 #4a9c4f; cursor: pointer; font-weight: 800; }
+  #replay-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #4a9c4f; }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <a class="back" href="../../" aria-label="Voltar">←</a>
+  <h1>Conta e Arrasta</h1>
+  <div class="hero">🍎 🧺 1–10</div>
+
+  <div class="config">
+    <div class="config-group">
+      <div class="config-label">Nível</div>
+      <div class="levels" id="levels">
+        <button class="level-btn" data-level="1"><span class="lvl-num">1</span><span class="lvl-desc">até 5</span></button>
+        <button class="level-btn" data-level="2"><span class="lvl-num">2</span><span class="lvl-desc">até 8</span></button>
+        <button class="level-btn" data-level="3"><span class="lvl-num">3</span><span class="lvl-desc">até 10</span></button>
+      </div>
+    </div>
+
+    <div class="config-group">
+      <div class="config-label">Áudio</div>
+      <div class="toggle-row">
+        <label for="cfg-music">Música de fundo</label>
+        <label class="switch" for="cfg-music"><input type="checkbox" id="cfg-music"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label for="cfg-prompt">Voz: pergunta</label>
+        <label class="switch" for="cfg-prompt"><input type="checkbox" id="cfg-prompt"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label for="cfg-feedback">Voz: resposta</label>
+        <label class="switch" for="cfg-feedback"><input type="checkbox" id="cfg-feedback"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <button id="start-btn">Começar</button>
+  <p class="hint" style="margin-top:12px; opacity:0.8">Arrasta o número para a cesta</p>
+  </div>
+
+<div id="game-screen">
+  <div class="topbar">
+    <a class="back" href="../../" aria-label="Voltar" style="position:static">←</a>
+    <div class="stars" id="stars"></div>
+    <div class="progress" id="progress"></div>
+    <button class="icon-btn" id="music-toggle" aria-label="Música">🎵</button>
+  </div>
+  <div class="problem" id="problem"></div>
+  <div class="choices" id="choices"></div>
+  <div class="basket-area">
+    <div class="basket" id="dropzone">Solta aqui</div>
+    <div class="hint">Arrasta o número para a cesta</div>
+  </div>
+</div>
+
+<div id="end-screen">
+  <a class="back" href="../../" aria-label="Voltar">←</a>
+  <div id="end-emoji" style="font-size: clamp(6rem, 18vw, 12rem);">🎉</div>
+  <h1 id="end-title"></h1>
+  <div id="end-score"></div>
+  <button id="replay-btn">Jogar de novo</button>
+</div>
+
+<script type="module">
+import { speak, warmup } from '../../lib/tts.js';
+import { ensureCtx, startMusic, stopMusic, toggleMusic, playSuccess, playWrong } from '../../lib/audio.js';
+import { pick, randInt, confettiBurst } from '../../lib/ui.js';
+
+const OBJECTS = [
+  { emoji: '🍎', singular: 'maçã',       plural: 'maçãs',       gender: 'f' },
+  { emoji: '⭐', singular: 'estrela',    plural: 'estrelas',    gender: 'f' },
+  { emoji: '🐠', singular: 'peixe',      plural: 'peixes',      gender: 'm' },
+  { emoji: '🌸', singular: 'flor',       plural: 'flores',      gender: 'f' },
+  { emoji: '🚗', singular: 'carro',      plural: 'carros',      gender: 'm' },
+  { emoji: '🐶', singular: 'cachorro',   plural: 'cachorros',   gender: 'm' },
+  { emoji: '🦆', singular: 'pato',       plural: 'patos',       gender: 'm' },
+  { emoji: '🍌', singular: 'banana',     plural: 'bananas',     gender: 'f' },
+  { emoji: '🎈', singular: 'balão',      plural: 'balões',      gender: 'm' },
+];
+
+function numWord(n, gender) {
+  if (n === 1) return gender === 'f' ? 'uma' : 'um';
+  if (n === 2) return gender === 'f' ? 'duas' : 'dois';
+  return { 3:'três', 4:'quatro', 5:'cinco', 6:'seis', 7:'sete', 8:'oito', 9:'nove', 10:'dez' }[n];
+}
+function howMany(gender) { return gender === 'f' ? 'Quantas' : 'Quantos'; }
+
+const PROMPTS = [
+  (g) => `${howMany(g)}?`,
+  (g) => `${howMany(g)} ao todo?`,
+  (g) => `${howMany(g)} no total?`,
+  (g) => `Conta pra mim: ${howMany(g).toLowerCase()}?`,
+  (g) => `Vamos contar? ${howMany(g).toLowerCase()}?`,
+];
+const SUCCESS = [
+  (n, g, noun) => `Isso! ${numWord(n, g)} ${noun(n)}!`,
+  (n, g, noun) => `Muito bem! ${numWord(n, g)} ${noun(n)}!`,
+  (n, g, noun) => `Boa! São ${numWord(n, g)} ${noun(n)}!`,
+  (n, g, noun) => `Acertou! ${numWord(n, g)} ${noun(n)}!`,
+  (n, g, noun) => `Mandou bem! ${numWord(n, g)} ${noun(n)}!`,
+];
+const WRONG = [
+  'Tenta de novo!',
+  'Quase! Tenta outra.',
+  'Hmm, não foi dessa.',
+  'Olha de novo!',
+  'Conta com calma!',
+  'Tenta mais uma vez.',
+];
+
+const TOTAL_ROUNDS = 10;
+const CFG_KEY = 'contaearrasta.cfg.v1';
+const DEFAULT_CFG = { level: 1, music: false, voicePrompt: true, voiceFeedback: true };
+const MAX_BY_LEVEL = { 1: 5, 2: 8, 3: 10 };
+const OPTIONS_BY_LEVEL = { 1: 3, 2: 3, 3: 4 };
+
+let cfg = loadCfg();
+let score = 0;
+let round = 0;
+let answered = false;
+let firstTry = true;
+let currentGender = 'm';
+
+function loadCfg() {
+  try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; }
+  catch { return { ...DEFAULT_CFG }; }
+}
+function saveCfg() { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+
+function sayPrompt(text) { if (cfg.voicePrompt) speak(text); }
+function sayFeedback(text) { if (cfg.voiceFeedback) speak(text); }
+
+function applyCfgToStartUI() {
+  document.querySelectorAll('.level-btn').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.level) === cfg.level);
+  });
+  document.getElementById('cfg-music').checked = cfg.music;
+  document.getElementById('cfg-prompt').checked = cfg.voicePrompt;
+  document.getElementById('cfg-feedback').checked = cfg.voiceFeedback;
+}
+
+document.querySelectorAll('.level-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    cfg.level = Number(b.dataset.level);
+    saveCfg();
+    applyCfgToStartUI();
+  });
+});
+document.getElementById('cfg-music').addEventListener('change', e => { cfg.music = e.target.checked; saveCfg(); });
+document.getElementById('cfg-prompt').addEventListener('change', e => { cfg.voicePrompt = e.target.checked; saveCfg(); });
+document.getElementById('cfg-feedback').addEventListener('change', e => { cfg.voiceFeedback = e.target.checked; saveCfg(); });
+applyCfgToStartUI();
+
+function renderGroup(n, obj) {
+  let html = '<div class="group">';
+  for (let i = 0; i < n; i++) html += `<span class="item">${obj}</span>`;
+  html += '</div>';
+  return html;
+}
+
+function nextProblem() {
+  if (round >= TOTAL_ROUNDS) { endGame(); return; }
+  round++;
+  answered = false;
+  firstTry = true;
+  document.getElementById('progress').textContent = `${round}/${TOTAL_ROUNDS}`;
+
+  const maxN = MAX_BY_LEVEL[cfg.level] || 5;
+  const n = randInt(1, maxN);
+  const answer = n;
+  const obj = pick(OBJECTS);
+  const g = obj.gender;
+  currentGender = g;
+  const noun = (k) => k === 1 ? obj.singular : obj.plural;
+
+  const problemHTML =
+    renderGroup(n, obj.emoji);
+
+  document.getElementById('problem').innerHTML = problemHTML;
+  const dz = document.getElementById('dropzone');
+  if (dz) {
+    dz.textContent = 'Solta aqui';
+    dz.classList.remove('correct');
+  }
+
+  // opções: correta + distratores próximos
+  const nOptions = OPTIONS_BY_LEVEL[cfg.level] || 3;
+  const choices = new Set([answer]);
+  const pool = [];
+  for (let d = -2; d <= 2; d++) if (d !== 0) pool.push(answer + d);
+  pool.push(answer + 3, answer - 3);
+  const uniquePool = pool.filter(x => x >= 1 && x <= 10 && x !== answer);
+  while (choices.size < nOptions && uniquePool.length) {
+    const i = Math.floor(Math.random() * uniquePool.length);
+    const val = uniquePool.splice(i, 1)[0];
+    choices.add(val);
+  }
+  while (choices.size < nOptions) {
+    const r = randInt(1, 10);
+    if (!choices.has(r)) choices.add(r);
+  }
+  const shuffled = [...choices].sort(() => Math.random() - 0.5);
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  shuffled.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = c;
+    btn.dataset.value = c;
+    attachDrag(btn, answer, g, noun);
+    choicesEl.appendChild(btn);
+  });
+
+  setTimeout(() => sayPrompt(pick(PROMPTS)(g)), 350);
+}
+
+// drag & drop (pointer events: funciona mouse + touch)
+function attachDrag(btn, correct, gender, noun) {
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let pointerId = null;
+
+  const onDown = (e) => {
+    if (answered || btn.disabled) return;
+    dragging = true;
+    pointerId = e.pointerId;
+    btn.setPointerCapture(pointerId);
+    startX = e.clientX; startY = e.clientY;
+    btn.classList.add('dragging');
+    btn.style.transition = 'none';
+    e.preventDefault();
+  };
+
+  const intersects = () => {
+    const dz = document.getElementById('dropzone');
+    if (!dz) return false;
+    const a = btn.getBoundingClientRect();
+    const b = dz.getBoundingClientRect();
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  };
+
+  const onMove = (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    btn.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+
+    const dz = document.getElementById('dropzone');
+    if (dz) dz.classList.toggle('drop-hover', intersects());
+  };
+
+  const onUp = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    btn.releasePointerCapture(pointerId);
+    btn.classList.remove('dragging');
+    btn.style.transition = '';
+
+    const dz = document.getElementById('dropzone');
+    const over = intersects();
+    if (dz) dz.classList.remove('drop-hover');
+
+    if (over) {
+      handleDrop(Number(btn.dataset.value), correct, btn, dz, gender, noun);
+    } else {
+      btn.style.transform = '';
+    }
+  };
+
+  btn.addEventListener('pointerdown', onDown);
+  btn.addEventListener('pointermove', onMove);
+  btn.addEventListener('pointerup', onUp);
+  btn.addEventListener('pointercancel', onUp);
+}
+
+function handleDrop(picked, correct, btn, dz, gender, noun) {
+  if (answered) return;
+  if (picked === correct) {
+    answered = true;
+    dz.textContent = `🧺 ${picked}`;
+    dz.classList.add('correct');
+    btn.classList.add('used');
+    btn.style.transform = '';
+    playSuccess();
+    confettiBurst();
+    if (firstTry) { score++; updateStars(); }
+    setTimeout(() => sayFeedback(pick(SUCCESS)(correct, gender, noun)), 100);
+    setTimeout(nextProblem, 2400);
+  } else {
+    firstTry = false;
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    btn.style.transform = '';
+    playWrong();
+    setTimeout(() => sayFeedback(pick(WRONG)), 100);
+  }
+}
+
+function updateStars() {
+  document.getElementById('stars').textContent = '⭐'.repeat(Math.min(score, 10));
+}
+
+function endGame() {
+  document.getElementById('game-screen').style.display = 'none';
+  const end = document.getElementById('end-screen');
+  end.style.display = 'flex';
+
+  let emoji, title, phrase;
+  if (score === TOTAL_ROUNDS) { emoji = '🏆'; title = 'Perfeito!'; phrase = 'Gabaritou! Mandou muito bem!'; }
+  else if (score >= 7)        { emoji = '🌟'; title = 'Muito bem!'; phrase = 'Que show de bola!'; }
+  else if (score >= 4)        { emoji = '🎉'; title = 'Boa!';       phrase = 'Continua assim!'; }
+  else                        { emoji = '💪'; title = 'Vamos de novo!'; phrase = 'Cada vez melhor!'; }
+
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-score').innerHTML = `${'⭐'.repeat(score)}${'☆'.repeat(TOTAL_ROUNDS - score)}<br>${score} de ${TOTAL_ROUNDS}`;
+
+  if (score >= 7) { confettiBurst(); setTimeout(confettiBurst, 400); setTimeout(confettiBurst, 800); }
+  setTimeout(() => sayFeedback(`${title} ${phrase} Você acertou ${score} de ${TOTAL_ROUNDS}.`), 300);
+}
+
+function resetGame() {
+  score = 0; round = 0; firstTry = true; answered = false;
+  updateStars();
+  document.getElementById('end-screen').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'flex';
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  ensureCtx();
+  warmup();
+  const musicBtn = document.getElementById('music-toggle');
+  if (cfg.music) {
+    startMusic();
+    musicBtn.textContent = '🎵';
+    musicBtn.hidden = false;
+  } else {
+    stopMusic();
+    musicBtn.hidden = true;
+  }
+  score = 0; round = 0;
+  updateStars();
+  nextProblem();
+});
+
+document.getElementById('music-toggle').addEventListener('click', () => {
+  const on = toggleMusic();
+  document.getElementById('music-toggle').textContent = on ? '🎵' : '🔇';
+});
+
+document.getElementById('replay-btn').addEventListener('click', resetGame);
+</script>
+
+</body>
+</html>
+

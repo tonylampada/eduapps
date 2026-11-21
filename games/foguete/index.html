@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#BFE6FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Foguete">
+  <title>Foguete para a Lua</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231B2350'/%3E%3Ccircle cx='48' cy='16' r='8' fill='%23E9E4D4'/%3E%3Cpath d='M32 8q10 10 10 28H22q0-18 10-28z' fill='%23fff'/%3E%3Cpath d='M22 30l-8 12h8zM42 30l8 12h-8z' fill='%23E5484D'/%3E%3Ccircle cx='32' cy='24' r='4.5' fill='%233E86D6'/%3E%3Cpath d='M26 42q6 14 12 0z' fill='%23FFB23F'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body data-phase="start">
+
+<a class="back" href="../../" aria-label="Voltar">←</a>
+
+<main class="app">
+  <div id="scene" class="scene">
+    <div class="sun"></div>
+    <div class="moon-sky"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="ground"><div class="road"></div></div>
+
+    <div id="world" class="world">
+      <svg class="town t1" viewBox="0 0 120 80" aria-hidden="true">
+        <rect x="4" y="22" width="34" height="58" rx="3" fill="#F2C46D"/>
+        <rect x="42" y="6" width="30" height="74" rx="3" fill="#9BB8E8"/>
+        <rect x="76" y="30" width="40" height="50" rx="3" fill="#F0A0A8"/>
+        <g fill="#fff" opacity=".85"><rect x="10" y="30" width="8" height="8" rx="1.5"/><rect x="24" y="30" width="8" height="8" rx="1.5"/><rect x="10" y="46" width="8" height="8" rx="1.5"/><rect x="24" y="46" width="8" height="8" rx="1.5"/><rect x="48" y="14" width="7" height="8" rx="1.5"/><rect x="60" y="14" width="7" height="8" rx="1.5"/><rect x="48" y="30" width="7" height="8" rx="1.5"/><rect x="60" y="30" width="7" height="8" rx="1.5"/><rect x="48" y="46" width="7" height="8" rx="1.5"/><rect x="60" y="46" width="7" height="8" rx="1.5"/><rect x="83" y="40" width="9" height="9" rx="1.5"/><rect x="100" y="40" width="9" height="9" rx="1.5"/></g>
+      </svg>
+      <svg class="town t2" viewBox="0 0 120 80" aria-hidden="true">
+        <rect x="2" y="34" width="36" height="46" rx="3" fill="#B7E08F"/>
+        <path d="M0 36 20 18 40 36z" fill="#C8463C"/>
+        <rect x="46" y="14" width="26" height="66" rx="3" fill="#F7D26B"/>
+        <rect x="78" y="26" width="38" height="54" rx="3" fill="#A9C9F0"/>
+        <g fill="#fff" opacity=".85"><rect x="12" y="46" width="8" height="8" rx="1.5"/><rect x="51" y="22" width="6" height="7" rx="1.5"/><rect x="61" y="22" width="6" height="7" rx="1.5"/><rect x="51" y="38" width="6" height="7" rx="1.5"/><rect x="61" y="38" width="6" height="7" rx="1.5"/><rect x="84" y="34" width="9" height="9" rx="1.5"/><rect x="101" y="34" width="9" height="9" rx="1.5"/><rect x="84" y="52" width="9" height="9" rx="1.5"/><rect x="101" y="52" width="9" height="9" rx="1.5"/></g>
+      </svg>
+
+      <div id="slot-1" class="slot"></div>
+      <div id="slot-2" class="slot"></div>
+
+      <div id="pad" class="pad">
+        <svg class="tower" viewBox="0 0 30 110" aria-hidden="true">
+          <path d="M4 110V8h22v102" fill="none" stroke="#C8463C" stroke-width="4"/>
+          <path d="M4 20 26 36M26 20 4 36M4 48 26 64M26 48 4 64M4 76 26 92M26 76 4 92" stroke="#C8463C" stroke-width="2.5"/>
+        </svg>
+        <svg class="pad-rocket" viewBox="0 0 70 130" aria-hidden="true"><use href="#rocket-art"/></svg>
+        <svg class="padbase" viewBox="0 0 60 12" aria-hidden="true"><rect width="60" height="12" rx="3" fill="#7A8396"/><rect y="0" width="60" height="4" rx="2" fill="#A2AABB"/></svg>
+      </div>
+      <svg id="parked" class="parked truck-art" viewBox="0 0 140 90" aria-hidden="true"><use href="#truck-art"/><g fill="#2B2B33"><circle cx="36" cy="72" r="14"/><circle cx="106" cy="72" r="14"/></g><g fill="#C9CED8"><circle cx="36" cy="72" r="6.5"/><circle cx="106" cy="72" r="6.5"/></g></svg>
+
+      <div id="space" class="space" aria-hidden="true">
+        <div class="stars"></div>
+        <div class="earth"></div>
+        <div class="moon-ground"><i></i><i></i><i></i><i></i></div>
+        <svg class="flag" viewBox="0 0 40 60"><path d="M4 2v58" stroke="#ccd" stroke-width="3"/><path d="M5 4h30l-6 9 6 9H5z" fill="#F5B82E"/><circle cx="18" cy="13" r="4" fill="#E5484D"/></svg>
+      </div>
+
+      <div id="ride" class="ride">
+        <div class="ride-move">
+          <svg class="vehicle truck-svg" viewBox="0 0 140 90" aria-hidden="true">
+            <g class="puffs"><circle cx="6" cy="62" r="5"/><circle cx="6" cy="62" r="5"/><circle cx="6" cy="62" r="5"/></g>
+            <use class="body" href="#truck-art"/>
+            <g class="wheel" style="transform-origin: 36px 72px"><circle cx="36" cy="72" r="14" fill="#2B2B33"/><circle cx="36" cy="72" r="6.5" fill="#C9CED8"/><rect x="34" y="60" width="4" height="8" rx="2" fill="#5A5F6B"/></g>
+            <g class="wheel" style="transform-origin: 106px 72px"><circle cx="106" cy="72" r="14" fill="#2B2B33"/><circle cx="106" cy="72" r="6.5" fill="#C9CED8"/><rect x="104" y="60" width="4" height="8" rx="2" fill="#5A5F6B"/></g>
+          </svg>
+          <svg class="vehicle rocket-svg" viewBox="0 0 70 130" aria-hidden="true">
+            <g class="flame"><path d="M22 106q13 40 26 0z" fill="#FFB23F"/><path d="M28 106q7 24 14 0z" fill="#FFF0A0"/></g>
+            <use href="#rocket-art"/>
+            <g class="pilot"><circle cx="35" cy="48" r="8" fill="#F1C7A0"/><circle cx="32" cy="47" r="1.4" fill="#2B2B2B"/><circle cx="38" cy="47" r="1.4" fill="#2B2B2B"/><path d="M32 51q3 2.5 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.3" stroke-linecap="round"/></g>
+          </svg>
+          <div class="pop honk-word">BI-BI!</div>
+          <div class="pop vroom">VRUM!</div>
+          <div class="pop cough">cof cof</div>
+          <div class="pop stars-bonk">★ ✦ ★</div>
+          <div class="poof"></div>
+        </div>
+      </div>
+    </div>
+
+    <p id="bubble" class="bubble" aria-live="polite"></p>
+
+    <div class="corner">
+      <div id="ear" class="ear" role="img" aria-label="Estou ouvindo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.4-3.6 4.4-3.6 7.6a3 3 0 0 1-5.7 1.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.7-2.1 2.2-2.1 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <button id="mute" class="mute" type="button" aria-pressed="false" aria-label="Sons ligados">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>
+          <path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path class="cross" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <p id="tap-hint" class="tap-hint" hidden>Toque na tela para eu ouvir</p>
+    <p id="note" class="note" hidden></p>
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+  </div>
+
+  <nav id="cmds" class="cmds" aria-label="Comandos"></nav>
+</main>
+
+<!-- One tap starts the mic (iOS only grants it inside a tap). -->
+<button id="start" class="start" type="button">
+  <span class="start-ride">🚚 🚀 🌙</span>
+  <span class="start-title">Foguete para a Lua</span>
+  <span class="start-go">▶ Toque para começar</span>
+  <span class="start-adult">Depois é só falar: “liga!”, “acelera!”, “para!”, “pula!”… O jogo escuta o tempo todo. Os botões embaixo também funcionam.</span>
+</button>
+
+<!-- The mic stopped and only a tap can restart it (iOS): an invisible button
+     over the whole screen. Shown through `hidden`, so it never sits in the layout. -->
+<button id="tap-resume" class="tap-resume" type="button" aria-label="Toque na tela para eu ouvir" hidden></button>
+
+<!-- The truck's picture, shared by the driving truck and the one parked at the pad. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="truck-art">
+      <rect x="6" y="56" width="10" height="6" rx="2" fill="#5A5F6B"/>
+      <rect x="12" y="30" width="72" height="34" rx="6" fill="#3E86D6"/>
+      <rect x="12" y="30" width="72" height="7" rx="3" fill="#6BA6E8"/>
+      <path d="M84 64V22q0-8 8-8h20q6 0 10 6l10 18q2 4 2 8v18z" fill="#E5484D"/>
+      <path d="M94 22h17q3 0 5 3l8 14H94z" fill="#BFE3FF" stroke="#fff" stroke-width="2"/>
+      <circle cx="104" cy="31" r="6.5" fill="#F1C7A0"/>
+      <circle cx="106.5" cy="30" r="1.3" fill="#2B2B2B"/>
+      <path d="M103 34q3 2 5.5 0" fill="none" stroke="#2B2B2B" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="126" y="48" width="9" height="6" rx="3" fill="#FFE27A"/>
+      <rect x="88" y="44" width="8" height="3" rx="1.5" fill="#B5343A"/>
+      <rect x="6" y="62" width="132" height="6" rx="3" fill="#5A5F6B"/>
+    </g>
+    <g id="rocket-art">
+      <path d="M8 76 0 104h18zM62 76l8 28H52z" fill="#E5484D"/>
+      <path d="M35 2q24 22 24 64v34H11V66Q11 24 35 2z" fill="#F6F7FB" stroke="#C9CED8" stroke-width="2"/>
+      <path d="M22 14q13-12 26 0q-13 4-26 0z" fill="#E5484D"/>
+      <circle cx="35" cy="46" r="13" fill="#3E86D6" stroke="#C9CED8" stroke-width="3"/>
+      <path d="M23 100h24l-3 8H26z" fill="#7A8396"/>
+      <path d="M35 66v34" stroke="#E5484D" stroke-width="6"/>
+    </g>
+  </defs>
+</svg>
+
+</body>
+</html>

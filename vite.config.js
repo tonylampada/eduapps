@@ -12,6 +12,7 @@ export default defineConfig({
         primeiraletra: resolve(__dirname, 'games/primeiraletra/index.html'),
         contaearrasta: resolve(__dirname, 'games/contaearrasta/index.html'),
         cachorro:      resolve(__dirname, 'games/cachorro/index.html'),
+        foguete:       resolve(__dirname, 'games/foguete/index.html'),
       },
     },
   },

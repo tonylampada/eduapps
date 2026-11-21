@@ -25,7 +25,7 @@ const HEARD = {
 for (const [heard, want] of Object.entries(HEARD)) assert.deepEqual(spot(heard), want, `"${heard}"`);
 console.log(`✓ matcher: ${Object.keys(HEARD).length} phrases`);
 
-const root = new URL('./', import.meta.url).pathname;
+const root = new URL('../../', import.meta.url).pathname; // the repo: the game imports lib/voice/
 const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
 await new Promise((r) => server.listen(0, r));
-const URL_ = process.env.E2E_URL || `http://localhost:${server.address().port}/`;
+const URL_ = process.env.E2E_URL || `http://localhost:${server.address().port}/games/foguete/`;
 
 function fakeSR() {
   window.__srNeedsTap = false;

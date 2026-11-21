@@ -134,3 +134,10 @@ export function spot(text) {
 }
 
 export const key = (r) => (r.color ? `${r.item}:${r.color}` : r.item);
+
+// Vosk's vocabulary is spelled with accents ("dá" is the verb, "da" is not).
+const ACCENTED = ['dá', 'dê', 'então', 'também'];
+
+// Every word the spotter knows, for a recognizer that listens only for these
+// (Vosk, ?engine=vosk). The near misses are in so they have somewhere to land.
+export const GRAMMAR = [...VERBS, ...Object.values(ITEMS).flat(), ...Object.values(COLORS).flat(), ...NEAR_MISSES, ...BEFORE_BARE_DA, 'a', 'o', 'as', 'os', ...ACCENTED];

@@ -246,7 +246,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes hop { 45% { transform: translateY(-70%) rotate(-8deg); } 80% { transform: translateY(0) rotate(3deg); } 90% { transform: translateY(0) scaleY(.92); } }
 
 .fx-flip .vehicle { animation: flip 1s ease-in-out; }
-@keyframes flip { 30%, 70% { transform: scaleX(-1); } }
+/* steps over scaleX(0): a zero-width frame reads as "gone" to the e2e's visibility check */
+@keyframes flip { 14.9% { transform: scaleX(0.04); } 15% { transform: scaleX(-0.04); } 30%, 70% { transform: scaleX(-1); } 85% { transform: scaleX(-0.04); } 85.1% { transform: scaleX(0.04); } }
 .is-rocket.fx-flip .vehicle { animation: spin 1s ease-in-out; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

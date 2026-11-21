@@ -109,3 +109,10 @@ export function spot(text) {
   }
   return out;
 }
+
+// Vosk's vocabulary is spelled with accents.
+const ACCENTED = ['caminhão', 'então', 'já', 'semáforo', 'aí'];
+
+// Every word the spotter knows, for a recognizer that listens only for these
+// (Vosk, ?engine=vosk). The near misses are in so they have somewhere to land.
+export const GRAMMAR = [...Object.values(COMMANDS).flatMap((c) => c.forms), ...DECOLA, ...NEAR_MISSES, ...CALLS, 'bi', 'fon', ...ACCENTED];

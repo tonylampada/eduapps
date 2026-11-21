@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 
 const { chromium } = await import(process.env.PLAYWRIGHT || 'playwright-core');
 
-const root = new URL('../', import.meta.url).pathname;
+const root = new URL('../../../', import.meta.url).pathname; // the repo: the game imports lib/voice/
 const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
@@ -21,7 +21,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
 await new Promise((r) => server.listen(0, r));
-const URL_ = process.env.E2E_URL || `http://localhost:${server.address().port}/`;
+const URL_ = process.env.E2E_URL || `http://localhost:${server.address().port}/games/monstro/`;
 
 function fakeSR() {
   window.__srNeedsTap = false;

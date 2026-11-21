@@ -1,17 +1,12 @@
-import { COMMANDS, ORDER, spot } from './commands.js';
+import { COMMANDS, GRAMMAR, ORDER, spot } from './commands.js';
 import { goal, newRun, step } from './house.js';
 import * as sfx from './sfx.js';
-import * as meter from './meter.js';
-import { dbg, describeResults, initDebug, isIOS, readFlags } from './debug.js';
+import { dbg, initDebug, readFlags } from '../../lib/voice/debug.js';
+import { createEar } from '../../lib/voice/ear.js';
 
 const $ = (id) => document.getElementById(id);
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const IOS = isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
-const ANDROID = /Android/i.test(navigator.userAgent);
 const FLAGS = readFlags(location.search);
 
-const START_MS = 3000; // a start() with no `start` event by now failed silently
-const FIRST_START_MS = 15000; // the first one may sit behind permission prompts
 const SAME_CMD_MS = 700; // the same word again this soon is the recognizer repeating itself
 const PARTY_MS = 3800;
 
@@ -320,229 +315,40 @@ function showHeard(text, hit) {
   bubbleTimer = setTimeout(() => ui.bubble.classList.remove('on', 'hit'), 2600);
 }
 
-// ---------- ear: always listening ----------
-// One recognition
-// session kept alive as long as the browser allows; when it ends, restart it
-// without a tap; if that fails, the whole screen becomes the tap target.
-
-const ear = { on: false, s: null, n: 0, worked: false, free: { ok: 0, fail: 0 }, tap: false, fails: 0, deaths: 0, timer: 0, lastEnd: 0 };
-
-function earOn(gesture) {
-  if (!SR) return;
-  ear.on = true;
-  if (gesture) ear.tap = false;
-  earStart(gesture ? 'tap' : 'resume', gesture);
-}
-
-function earCue() {
-  const b = document.body.classList;
-  b.toggle('ear-on', ear.on && !!ear.s);
-  const tap = ear.on && ear.tap && !ear.s;
-  b.toggle('ear-tap', tap);
-  ui.tapResume.hidden = !tap;
-  ui.tapHint.hidden = !tap;
-  if (!ear.s) ['capturing', 'sound', 'hearing'].forEach((c) => b.remove(c));
-}
-
-function earDrop() {
-  const s = ear.s;
-  if (!s) return;
-  ear.s = null;
-  clearTimeout(s.wd);
-  dbg(`sr#${s.id} abort()`);
-  try {
-    s.r.abort();
-  } catch {
-    // already stopped
-  }
-  earCue();
-}
-
-function earStart(why, gesture = false) {
-  clearTimeout(ear.timer);
-  if (!ear.on || ear.s || document.hidden) return;
-  if (ear.tap && !gesture) return earCue(); // only a tap brings it back now
-  const r = new SR();
-  r.lang = 'pt-BR';
-  r.interimResults = true; // act on the word as it is heard, not after the pause
-  r.maxAlternatives = 3;
-  // Android Chrome repeats words in continuous mode.
-  r.continuous = !ANDROID;
-  const s = { r, id: ++ear.n, why, gesture, at: Date.now(), started: false, alive: false, fired: [], error: '' };
-  const cue = (c, on) => document.body.classList.toggle(c, on);
-  const on = (type, f) => {
-    r[`on${type}`] = (e) => {
-      if (type !== 'result') dbg(`sr#${s.id} ${type}${e?.error ? ` ${e.error}${e.message ? ` (${e.message})` : ''}` : ''}${ear.s === s ? '' : ' (old)'}`);
-      if (ear.s === s) f?.(e);
-    };
-  };
-  on('start', () => earBegan(s));
-  on('audiostart', () => {
-    earBegan(s);
-    cue('capturing', true);
-    dbg(`sr#${s.id} capturing; meter ${meter.status()}`);
-  });
-  on('soundstart', () => cue('sound', true));
-  on('speechstart', () => cue('hearing', true));
-  on('speechend', () => cue('hearing', false));
-  on('soundend', () => cue('sound', false));
-  on('audioend', () => cue('capturing', false));
-  on('nomatch');
-  on('result', (e) => {
-    dbg(`sr#${s.id} result ${describeResults(e.results, e.resultIndex)}`);
-    earHeard(s, e);
-  });
-  on('error', (e) => {
-    s.error = e.error;
-  });
-  on('end', () => earEnded(s));
-  ear.s = s;
-  s.wd = setTimeout(() => ear.s === s && !s.started && earFailed(s, 'no start event'), ear.worked ? START_MS : FIRST_START_MS);
-  dbg(`sr#${s.id} start() — ${why}, ${gesture ? 'in a tap' : 'NO gesture'}, continuous ${r.continuous}`);
-  try {
-    r.start();
-  } catch (err) {
-    dbg(`sr#${s.id} start() threw ${err.name}: ${err.message}`);
-    earFailed(s, err.name);
-    return;
-  }
-  earCue();
-}
-
-function earBegan(s) {
-  if (s.started) return;
-  s.started = true;
-  clearTimeout(s.wd);
-  ear.worked = true;
-  ear.fails = 0;
-  if (!s.gesture) {
-    ear.free.ok++;
-    dbg(`sr#${s.id} restart WITHOUT a tap worked (ok ${ear.free.ok} / failed ${ear.free.fail})`);
-  }
-  if (ear.lastEnd) dbg(`sr#${s.id} up ${Date.now() - ear.lastEnd} ms after the last session ended`);
-  earCue();
-}
-
-function earFailed(s, why) {
-  if (ear.s === s) earDrop();
-  ear.fails++;
-  if (!s.gesture) ear.free.fail++;
-  dbg(`sr#${s.id} FAILED (${why}), ${s.gesture ? 'started in a tap' : `no gesture: ok ${ear.free.ok} / failed ${ear.free.fail}`}`);
-  if (!ear.on) return;
-  if ((why === 'not-allowed' || why === 'service-not-allowed') && !ear.worked) {
-    ear.on = false;
-    earCue();
-    return showNote('O microfone está bloqueado. Libere o microfone para este site (no iPad: Ajustes › Safari › Microfone, e o Ditado ligado). Os botões funcionam assim mesmo.');
-  }
-  // Restarts without a tap have worked here before: a hiccup, try again shortly.
-  if (!s.gesture && ear.free.ok > 0 && ear.fails < 3) {
-    ear.timer = setTimeout(() => earStart('retry'), 300 * ear.fails);
-    return;
-  }
-  earWaitTap(why);
-}
-
-function earWaitTap(why) {
-  ear.tap = true;
-  dbg(`waiting for a tap anywhere (${why})`);
-  earCue();
-}
-
-// Inside any tap: bring the mic back if it isn't up.
-function earTapped() {
-  if (!ear.on) return;
-  sfx.unlock();
-  meterOn();
-  if (ear.s?.started) return;
-  ear.tap = false;
-  ear.fails = 0;
-  ear.deaths = 0;
-  earDrop();
-  earStart('tap', true);
-}
-
-// Interim results grow ("acende" -> "acende a luz" -> final), and on iOS one
-// result can keep growing for the whole session. Per result, count the commands
-// already acted on and fire only the new ones: one utterance fires once.
-function earHeard(s, e) {
-  s.alive = true;
-  ear.deaths = 0;
-  for (let i = e.resultIndex; i < e.results.length; i++) {
-    const alts = Array.from(e.results[i], (a) => a.transcript);
-    const done = s.fired[i] || 0;
-    const hit = alts.map(spot).find((cmds) => cmds.length > done);
-    showHeard(alts[0], !!hit);
-    if (!hit) continue;
-    s.fired[i] = hit.length;
-    hit.slice(done).forEach((c) => fire(c, 'voice'));
-  }
-}
-
-function earEnded(s) {
-  ear.s = null;
-  ear.lastEnd = Date.now();
-  clearTimeout(s.wd);
-  earCue();
-  const err = s.error;
-  const lived = Date.now() - s.at;
-  dbg(`sr#${s.id} ended after ${(lived / 1000).toFixed(1)} s${err ? ` (${err})` : ''}`);
-  if (!ear.on) return;
-  if (err === 'audio-capture') showNote('Não achei um microfone. Verifique se ele está ligado.');
-  if (err === 'network') showNote('O reconhecimento de fala precisa de internet. Os botões funcionam assim mesmo.');
-  if (!s.started) return earFailed(s, err || 'ended before start');
-  const died = (err && !['no-speech', 'aborted'].includes(err)) || (!s.alive && lived < 1000);
-  ear.deaths = died ? ear.deaths + 1 : 0;
-  if (ear.deaths >= 3) return earWaitTap(`${ear.deaths} sessions in a row died at once`);
-  earStart(died ? 'session died' : 'session ended');
-}
+// ---------- ear: always listening (lib/voice/ear.js) ----------
 
 function showNote(text) {
   ui.note.textContent = text;
   ui.note.hidden = false;
 }
 
-// ---------- meter: the ear grows with the sound the mic hears ----------
+if (FLAGS.debug) initDebug(debugStatus); // before the ear, so the model load is logged
 
-function meterOn() {
-  if (!FLAGS.meter) return;
-  document.body.classList.add('metering');
-  meter.start(sfx.context(), (v) => ui.ear.style.setProperty('--lvl', v.toFixed(3)), dbg);
-}
+const ear = createEar({
+  sfx,
+  spot: spot,
+  heard: (text, fresh) => {
+    showHeard(text, fresh.length > 0);
+    fresh.forEach((c) => fire(c, 'voice'));
+  },
+  note: showNote,
+  grammar: GRAMMAR,
+  ui: { ear: ui.ear, tapResume: ui.tapResume, tapHint: ui.tapHint },
+});
 
 // ---------- debug (?debug) ----------
 
 function debugStatus() {
-  const s = ear.s;
-  const lvl = meter.getLevel();
   return [
     phase,
     `goal ${goal(run) || '-'}`,
-    !ear.on ? 'ear off' : s ? `sr#${s.id} ${s.started ? 'up' : 'starting'}` : ear.tap ? 'WAITING FOR TAP' : 'no session',
-    `no-tap restarts ok ${ear.free.ok}/failed ${ear.free.fail}`,
-    `meter ${meter.status()} ${'▁▂▃▄▅▆▇█'[Math.min(7, Math.round(lvl * 7))]} ${lvl.toFixed(2)}`,
+    ...ear.status(),
   ].join(' · ');
-}
-
-function debugEnv() {
-  dbg(`UA ${navigator.userAgent}`);
-  dbg(`iOS ${IOS}, standalone ${navigator.standalone ?? 'n/a'}, secure ${window.isSecureContext}, visible ${!document.hidden}`);
-  dbg(`SpeechRecognition ${'SpeechRecognition' in window}, webkitSpeechRecognition ${'webkitSpeechRecognition' in window}, getUserMedia ${!!navigator.mediaDevices?.getUserMedia}`);
-  dbg(`meter ${FLAGS.meter ? 'on' : 'off (url)'}, continuous ${!ANDROID}`);
-  navigator.permissions?.query?.({ name: 'microphone' }).then(
-    (p) => {
-      dbg(`mic permission: ${p.state}`);
-      p.onchange = () => dbg(`mic permission → ${p.state}`);
-    },
-    (err) => dbg(`mic permission: query failed (${err.name}: ${err.message})`),
-  );
 }
 
 // ---------- wiring ----------
 
-if (FLAGS.debug) {
-  initDebug(debugStatus);
-  debugEnv();
-}
+if (FLAGS.debug) ear.debugEnv();
 
 ui.cmds.innerHTML = ORDER.map((c) => `<button type="button" class="cmd" data-cmd="${c}"><span class="ic" aria-hidden="true">${COMMANDS[c].icon}</span><span class="t"><span class="v">${COMMANDS[c].verb}</span> <span class="w">${COMMANDS[c].label}</span></span></button>`).join('');
 ui.cmds.addEventListener('click', (e) => {
@@ -554,16 +360,13 @@ ui.start.addEventListener('click', () => {
   sfx.unlock();
   ui.start.hidden = true;
   setPhase('play');
-  earOn(true); // recognition start() first, still inside this tap...
-  meterOn(); // ...then the meter's getUserMedia
-  const ctx = sfx.context();
-  if (ctx && !ctx.onstatechange) ctx.onstatechange = () => dbg(`audio ctx ${ctx.state}`);
+  ear.begin();
 });
 
 // Any tap (the whole screen when the mic is down) restarts the mic inside the gesture.
 document.addEventListener('click', (e) => {
   if (e.target === ui.start || ui.start.contains(e.target)) return;
-  earTapped();
+  ear.tapped();
 });
 
 ui.mute.addEventListener('click', () => {
@@ -573,14 +376,8 @@ ui.mute.addEventListener('click', () => {
   ui.mute.setAttribute('aria-label', m ? 'Sons desligados' : 'Sons ligados');
 });
 
-document.addEventListener('visibilitychange', () => {
-  dbg(`page ${document.hidden ? 'hidden' : 'visible'}`);
-  if (document.hidden) earDrop();
-  else earStart('back on the page');
-});
-
 addEventListener('resize', () => pan(focusX, 0));
 
-if (!SR) showNote('Este navegador não consegue ouvir a fala (use Safari ou Chrome). Os botões funcionam assim mesmo.');
+if (!ear.supported) showNote('Este navegador não consegue ouvir a fala (use Safari ou Chrome). Os botões funcionam assim mesmo.');
 renderRoom();
 setPhase('start');

@@ -3,6 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request: # build only, so a PR shows whether the site still builds
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -25,11 +26,14 @@ jobs:
       - run: npm install
       - run: npm run build
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

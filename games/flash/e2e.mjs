@@ -101,6 +101,7 @@ async function open(browser, viewport, query = '') {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && !/404/.test(m.text()) && errors.push(m.text()));
   await page.addInitScript(fakeSR);
+  await page.addInitScript(() => localStorage.setItem('eduapps.voice.tapActs', '0')); // voice-only mode: the asserts expect taps to only speak
   await page.goto(URL_ + query);
   return page;
 }

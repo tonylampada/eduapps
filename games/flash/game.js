@@ -6,7 +6,7 @@ import * as sfx from './sfx.js';
 import * as meter from '../../lib/voice/meter.js';
 import { dbg, initDebug, readFlags } from '../../lib/voice/debug.js';
 import { createEar } from '../../lib/voice/ear.js';
-import { engineBadge } from '../../lib/voice/badge.js';
+import { engineBadge, tapActs } from '../../lib/voice/badge.js';
 
 const $ = (id) => document.getElementById(id);
 const FLAGS = readFlags(location.search);
@@ -288,10 +288,12 @@ function debugStatus() {
 if (FLAGS.debug) ear.debugEnv();
 
 ui.cmds.innerHTML = ORDER.map((c) => `<button type="button" class="cmd${c.startsWith('super') ? ' flash' : ''}" data-cmd="${c}"><span class="ic" aria-hidden="true">${COMMANDS[c].icon}</span><span class="w">${COMMANDS[c].label}</span></button>`).join('');
-// A button says its words out loud (the child repeats them); it doesn't play.
+// A button says its words out loud; with "Botões fazem a ação" on it also plays them.
 ui.cmds.addEventListener('click', (e) => {
   const b = e.target.closest('[data-cmd]');
-  if (b) say(COMMANDS[b.dataset.cmd].label, sfx.context());
+  if (!b) return;
+  say(COMMANDS[b.dataset.cmd].label, sfx.context());
+  if (tapActs()) fire(b.dataset.cmd, 'tap');
 });
 
 ui.start.addEventListener('click', () => {

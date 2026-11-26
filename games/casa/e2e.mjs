@@ -72,6 +72,7 @@ async function open(viewport, query = '', rnd = null) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.addInitScript(fakeSR);
+  await page.addInitScript(() => localStorage.setItem('eduapps.voice.tapActs', '0')); // voice-only mode: the asserts expect taps to only speak
   if (rnd !== null) await page.addInitScript((r) => (Math.random = () => r), rnd);
   await page.goto(URL_ + query);
   return page;

@@ -328,6 +328,7 @@ ui.cmds.addEventListener('click', (e) => {
   if (!b) return;
   const food = state.table[Number(b.dataset.i)];
   say(`dá ${FOODS[food.item].fem ? 'a' : 'o'} ${label(food, state.level)}`, sfx.context());
+  if (tapActs()) fire(food, 'tap');
 });
 
 ui.start.addEventListener('click', (e) => {
@@ -360,7 +361,7 @@ if (!ear.supported) showNote('Este navegador não consegue ouvir a fala (use Saf
 renderAll(false);
 setPhase('start');
 
-import { engineBadge } from '../../lib/voice/badge.js';
+import { engineBadge, tapActs } from '../../lib/voice/badge.js';
 const badge = engineBadge(ear.engine);
 ui.start.after(badge);
 ui.start.addEventListener('click', () => ui.start.hidden && badge.remove());

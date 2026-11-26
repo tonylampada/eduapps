@@ -308,7 +308,9 @@ if (FLAGS.debug) ear.debugEnv();
 ui.cmds.innerHTML = ORDER.map((c) => `<button type="button" class="cmd" data-cmd="${c}"><span class="ic" aria-hidden="true">${COMMANDS[c].icon}</span><span class="w">${COMMANDS[c].label}</span></button>`).join('');
 ui.cmds.addEventListener('click', (e) => {
   const b = e.target.closest('[data-cmd]');
-  if (b) say(COMMANDS[b.dataset.cmd].label, sfx.context());
+  if (!b) return;
+  say(COMMANDS[b.dataset.cmd].label, sfx.context());
+  if (tapActs()) fire(b.dataset.cmd, 'tap');
 });
 
 ui.start.addEventListener('click', () => {
@@ -337,7 +339,7 @@ if (!ear.supported) showNote('Este navegador não consegue ouvir a fala (use Saf
 renderRoad();
 setPhase('start');
 
-import { engineBadge } from '../../lib/voice/badge.js';
+import { engineBadge, tapActs } from '../../lib/voice/badge.js';
 const badge = engineBadge(ear.engine);
 ui.start.after(badge);
 ui.start.addEventListener('click', () => ui.start.hidden && badge.remove());

@@ -1,5 +1,5 @@
 import { say } from '../../lib/voice/say.js';
-import { COMMANDS, GRAMMAR, ORDER, ARM_MS, createCombiner, spot } from './commands.js';
+import { COMMANDS, GRAMMAR, ORDER, ARM_MS, createCombiner, flashNear, spot } from './commands.js';
 import { FINISH, OB_X, goal, newRace, step } from './track.js';
 import { createHiss } from './hiss.js';
 import * as sfx from './sfx.js';
@@ -15,11 +15,11 @@ const SAME_CMD_MS = 700; // the same command again this soon is the recognizer r
 const PARTY_MS = 3800;
 const WORLD = 380; // track units (style.css --u)
 
-const DUR = { jog: 900, zoom: 1100, vault: 1100, bump: 700, hop: 900, superhop: 1300, jump: 700, superjump: 1100, stop: 1100, wave: 600 };
-const SOUND = { jog: 'steps', zoom: 'whoosh', vault: 'whoosh', bump: 'bump', hop: 'boing', superhop: 'superboing', jump: 'boing', superjump: 'superboing', stop: 'brake', wave: 'wave' };
+const DUR = { jog: 900, zoom: 1100, bump: 700, hop: 900, superhop: 1300, jump: 700, superjump: 1100, stop: 1100, wave: 600 };
+const SOUND = { jog: 'steps', zoom: 'whoosh', bump: 'bump', hop: 'boing', superhop: 'superboing', jump: 'boing', superjump: 'superboing', stop: 'brake', wave: 'wave' };
 // share of the action the hero spends moving along the track
-const MOVE = { jog: 1, zoom: 0.75, vault: 0.8, hop: 0.85, superhop: 0.85 };
-const SPEED = new Set(['zoom', 'vault']);
+const MOVE = { jog: 1, zoom: 0.75, hop: 0.85, superhop: 0.85 };
+const SPEED = new Set(['zoom']);
 
 const ui = {
   scene: $('scene'), world: $('world'), hills: $('hills'), hero: $('hero'), car: $('car'), obs: [$('ob-0'), $('ob-1'), $('ob-2')],
@@ -130,15 +130,15 @@ function glow() {
 // ---------- commands ----------
 
 function fire(cmd, src) {
-  if (phase === 'start') return;
+  if (phase === 'start') return dbg(`skip ${cmd} (${src}): not started`);
   if (src === 'voice') {
     const now = Date.now();
-    if (lastVoice.cmd === cmd && now - lastVoice.at < SAME_CMD_MS) return dbg(`skip ${cmd}: said again too soon`);
+    if (lastVoice.cmd === cmd && now - lastVoice.at < SAME_CMD_MS) return dbg(`skip ${cmd}: said again ${now - lastVoice.at} ms after the last one`);
     lastVoice = { cmd, at: now };
   }
   fired++;
   document.body.dataset.fired = fired;
-  dbg(`fire ${cmd} (${src})${busy ? ' — queued' : ''}`);
+  dbg(`fire ${cmd} (${src})${busy ? ` — queued, he is busy${pending ? ` (replaces queued ${pending})` : ''}` : ''}`);
   const b = ui.cmds.querySelector(`[data-cmd=${cmd}]`);
   if (b) restartClass(b, 'pressed');
   if (busy) {
@@ -241,13 +241,18 @@ if (FLAGS.debug) initDebug(debugStatus); // before the ear, so the model load is
 const ear = createEar({
   sfx,
   spot,
-  heard: (text, fresh) => {
+  heard: (text, fresh, items) => {
     showHeard(text, fresh.length > 0);
-    for (const w of fresh) {
-      if (phase === 'start') break;
-      const a = combine(w, Date.now());
+    if (phase === 'start') return;
+    const from = items.length - fresh.length; // fresh is the tail of items
+    for (let k = from; k < items.length; k++) {
+      const w = items[k];
+      const near = w === 'flash' ? {} : flashNear(items, k);
+      const a = combine(w, Date.now(), near);
+      dbg(`combine ${w}@${k}${near.before ? ' flash-before' : ''}${near.after ? ' flash-after' : ''} -> ${a ? `${a.cmd} (${a.why})` : 'armed, waiting for the verb'}`);
       if (a) fire(a.cmd, 'voice');
-      else if (w === 'flash') charge();
+      else charge();
+      if (near.after) k++; // that "flash" is this verb's: it doesn't arm the next one
     }
   },
   note: showNote,

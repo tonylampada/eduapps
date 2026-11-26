@@ -30,7 +30,9 @@ const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
 const server = http.createServer((req, res) => {
-  const f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
+  let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html');
+  if (p.startsWith('/voice/')) p = `/public${p}`; // Vite serves public/ at the root
+  const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f)) return res.writeHead(404).end();
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
@@ -272,12 +274,15 @@ assert.notDeepEqual(second, first, 'obstacles swapped');
 await shot(p, 'ipad-9-next-run');
 step(`reset with the other order: ${first} -> ${second}`);
 
-// buttons fire too
+// a button speaks its words, it doesn't act
 b = await body(p);
+const reqs = [];
+p.on('request', (q) => reqs.push(q.url()));
 await p.click('[data-cmd=buzina]');
-assert.equal((await body(p)).fired, String(Number(b.fired) + 1));
-await settled(p);
-step('tapping a button fires its command');
+await p.waitForTimeout(300);
+assert.equal((await body(p)).fired, b.fired, 'a button does not play');
+assert.ok(reqs.some((u) => u.endsWith('/voice/buzina.mp3')), 'it says "buzina"');
+step('a button speaks its words, does not act');
 
 // session ends; a restart without a tap works
 await p.evaluate(() => window.__sr.end());

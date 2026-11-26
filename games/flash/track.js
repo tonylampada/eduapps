@@ -69,9 +69,13 @@ export function step(race, cmd) {
       if (ob >= 0) return { race: { ...race, n: race.n + 1 }, fx: 'bump' };
       return { race: moved(race, Math.min(race.x + JOG, stopAt(race, next)), 0.7), fx: 'jog' };
     case 'super': {
-      // Flash speed: over the obstacle in front of him if there is one, else all
-      // the way to the next one (or the finish).
-      if (ob >= 0) return { race: moved(race, OB_X[ob] + LAND, 0.2, { cleared: clear(race, ob) }), fx: 'vault' };
+      // Flash speed: all the way to the next obstacle (or the finish), straight
+      // through the one in front of him if there is one. A run, never a jump:
+      // jumping is what "pula" does.
+      if (ob >= 0) {
+        const cleared = clear(race, ob);
+        return { race: moved(race, stopAt({ ...race, cleared }, nextOb({ ...race, cleared })), 0.25, { cleared }), fx: 'zoom' };
+      }
       return { race: moved(race, stopAt(race, next), 0.25), fx: 'zoom' };
     }
     case 'pula':

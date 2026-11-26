@@ -26,7 +26,9 @@ const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
 const server = http.createServer((req, res) => {
-  const f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
+  let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html');
+  if (p.startsWith('/voice/')) p = `/public${p}`; // Vite serves public/ at the root
+  const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f)) return res.writeHead(404).end();
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
@@ -135,10 +137,13 @@ step(`plays to the bone in ${n + 1} commands, party`);
 
 await p.waitForFunction(() => document.body.dataset.phase === 'play' && document.body.dataset.runs === '1', null, { timeout: 6000 });
 b = await body(p);
+const reqs = [];
+p.on('request', (q) => reqs.push(q.url()));
 await p.click('[data-cmd=senta]', { force: true });
-assert.equal((await body(p)).fired, String(Number(b.fired) + 1));
-await settled(p);
-step('tapping a button fires its command');
+await p.waitForTimeout(300);
+assert.equal((await body(p)).fired, b.fired, 'a button does not play');
+assert.ok(reqs.some((u) => u.endsWith('/voice/senta.mp3')), 'it says "senta"');
+step('a button speaks its words, does not act');
 
 await p.evaluate(() => window.__sr.end());
 await p.waitForFunction(() => document.body.classList.contains('ear-on'));

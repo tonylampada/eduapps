@@ -16,7 +16,9 @@ const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
 const server = http.createServer((req, res) => {
-  const f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
+  let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html');
+  if (p.startsWith('/voice/')) p = `/public${p}`; // Vite serves public/ at the root
+  const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f)) return res.writeHead(404).end();
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
@@ -278,11 +280,14 @@ assert.equal((await body(p)).fed, '1');
 assert.equal((await body(p)).fired, String(Number(firedBefore) + 1));
 step(`interim "dá a ${ITEM[item]}" waits for its color: "${words(b.goal, 3)}" eaten once`);
 
-// tapping a plate gives it
+// tapping a plate says its words, it doesn't feed
+const reqs = [];
+p.on('request', (q) => reqs.push(q.url()));
 await p.click('.cmd.goal', { force: true });
-await settled(p);
-assert.equal((await body(p)).fed, '2');
-step('tapping the glowing plate feeds it');
+await p.waitForTimeout(300);
+assert.equal((await body(p)).fed, '1', 'a plate does not feed');
+assert.ok(reqs.some((u) => /\/voice\/da-[ao]-[a-z-]+\.mp3$/.test(u)), 'it says "dá a ..."');
+step('tapping a plate speaks its words, does not feed');
 
 // session ends; a restart without a tap works
 await p.evaluate(() => window.__sr.end());

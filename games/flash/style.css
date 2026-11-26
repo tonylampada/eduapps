@@ -189,19 +189,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes bob { 50% { transform: translateY(-4%); } }
 @keyframes stride { from { transform: rotate(35deg); } to { transform: rotate(-35deg); } }
 
-.fx-zoom .hero-svg, .fx-vault .hero-svg { transform: rotate(14deg); }
-.fx-zoom .front-leg, .fx-zoom .back-arm, .fx-vault .front-leg, .fx-vault .back-arm { animation: stride .12s linear infinite alternate; }
-.fx-zoom .back-leg, .fx-zoom .front-arm, .fx-vault .back-leg, .fx-vault .front-arm { animation: stride .12s linear infinite alternate-reverse; }
-.fx-zoom .trail, .fx-vault .trail { animation: trail 1.1s ease-out; }
+.fx-zoom .hero-svg { transform: rotate(14deg); }
+.fx-zoom .front-leg, .fx-zoom .back-arm { animation: stride .12s linear infinite alternate; }
+.fx-zoom .back-leg, .fx-zoom .front-arm { animation: stride .12s linear infinite alternate-reverse; }
+.fx-zoom .trail { animation: trail 1.1s ease-out; }
 @keyframes trail { 10%, 70% { opacity: 1; } 100% { opacity: 0; } }
-.fx-zoom .chhh, .fx-vault .chhh { animation: pop 1.1s ease-out; }
-.fx-vault .hero-move { animation: hop .9s ease-in-out; }
+.fx-zoom .chhh { animation: pop 1.1s ease-out; }
 
 .fx-hop .hero-move { animation: hop .76s ease-in-out; }
 .fx-jump .hero-move { animation: hop .7s ease-in-out; }
 .fx-superhop .hero-move { animation: superhop 1.1s ease-in-out; }
 .fx-superjump .hero-move { animation: superhop 1.1s ease-in-out; }
-.fx-hop .leg, .fx-jump .leg, .fx-superhop .leg, .fx-superjump .leg, .fx-vault .leg { transform: rotate(40deg) scaleY(.75); }
+.fx-hop .leg, .fx-jump .leg, .fx-superhop .leg, .fx-superjump .leg { transform: rotate(40deg) scaleY(.75); }
 .fx-superhop .sparkle, .fx-superjump .sparkle { animation: pop 1.1s ease-out .2s; }
 @keyframes hop { 45% { transform: translateY(-70%) rotate(-8deg); } 80% { transform: translateY(0) rotate(4deg); } 90% { transform: translateY(0) scaleY(.92); } }
 @keyframes superhop { 45% { transform: translateY(-150%) rotate(-360deg); } 80% { transform: translateY(0) rotate(-360deg); } 90% { transform: translateY(0) rotate(-360deg) scaleY(.9); } 100% { transform: rotate(-360deg); } }

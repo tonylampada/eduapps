@@ -17,7 +17,9 @@ const shots = process.argv[2];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.mp3': 'audio/mpeg' };
 const server = http.createServer((req, res) => {
-  const f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
+  let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html');
+  if (p.startsWith('/voice/')) p = `/public${p}`; // Vite serves public/ at the root
+  const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f)) return res.writeHead(404).end();
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }).end(fs.readFileSync(f));
 });
@@ -260,13 +262,16 @@ await p.waitForFunction(() => getComputedStyle(document.getElementById('beam')).
 await shot(p, 'ipad-8-next-room');
 step(`next room: dark again, cat moved ${cat1} -> ${b.cat}`);
 
-// buttons fire too
+// a button speaks its words, it doesn't act
+const reqs = [];
+p.on('request', (q) => reqs.push(q.url()));
 await p.click('[data-cmd=luz]', { force: true }); // the glowing button never stops moving
+await p.waitForTimeout(300);
 b = await body(p);
-assert.equal(b.fired, '6');
-await settled(p);
-assert.equal((await body(p)).lit, 'true');
-step('tapping a button fires its command');
+assert.equal(b.fired, '5', 'a button does not play');
+assert.notEqual(b.lit, 'true');
+assert.ok(reqs.some((u) => u.endsWith('/voice/acende-a-luz.mp3')), 'it says "acende a luz"');
+step('a button speaks its words, does not act');
 
 // session ends; a restart without a tap works
 await p.evaluate(() => window.__sr.end());

@@ -13,9 +13,10 @@ const { chromium } = await import(process.env.PLAYWRIGHT_CORE || 'playwright-cor
 const step = (msg) => console.log(`✓ ${msg}`);
 
 // ---------- the words, and Flash put together with its verb ----------
-const { spot, createCombiner } = await import('./commands.js');
+const { spot, createCombiner, flashNear } = await import('./commands.js');
 const HEARD = {
   'Flash corre': ['flash', 'corre'], 'corre Flash': ['corre', 'flash'], 'fléchi, pula!': ['flash', 'pula'], 'flex corre': ['flash', 'corre'],
+  'Flash Core': ['flash', 'corre'], 'Fresh corre': ['flash', 'corre'], Flashcorre: ['flash', 'corre'], 'flashpula!': ['flash', 'pula'],
   corre: ['corre'], 'pulá': ['pula'], 'Flash, para!': ['flash', 'para'], para: ['para'],
   'oi tudo bem': [], 'vou para casa': [], 'que flor bonita': [], 'quero uma pulga': [], 'olha o carro': [],
 };
@@ -23,6 +24,12 @@ for (const [heard, want] of Object.entries(HEARD)) assert.deepEqual(spot(heard),
 const c = createCombiner();
 const said = [['flash', 0], ['corre', 400], ['corre', 5000], ['flash', 5500], ['pula', 9000], ['flash', 20000], ['pula', 30000], ['flash', 40000], ['para', 40500], ['corre', 41000]];
 assert.deepEqual(said.map(([w, t]) => c(w, t)?.cmd ?? null), [null, 'super', 'corre', 'super', 'pula', null, 'pula', null, 'para', 'corre']);
+// the text decides when the clock can't: "flash" rewritten away from its fresh items, or said long ago
+const c2 = createCombiner();
+assert.equal(c2('corre', 0, flashNear(['flash', 'corre'], 1)).cmd, 'super', 'flash before it in the text');
+assert.equal(c2('corre', 9000, flashNear(['corre', 'flash'], 0)).cmd, 'super', 'flash after it in the text');
+assert.equal(c2('corre', 20000, flashNear(['corre', 'flash', 'corre'], 0)).cmd, 'corre', 'that flash is the next verb\'s');
+assert.equal(c2('corre', 30000, flashNear(['flash', 'corre', 'corre'], 2)).cmd, 'corre', 'a corre after a Flash corre is plain');
 step(`matcher: ${Object.keys(HEARD).length} phrases; "Flash" before or right after the verb makes it super`);
 
 const { newRace, step: move, goal, START } = await import('./track.js');
@@ -33,7 +40,11 @@ const zoom = move(r, 'super');
 assert.equal(jog.fx, 'jog');
 assert.equal(zoom.fx, 'zoom');
 assert.ok(zoom.race.x > jog.race.x, 'Flash corre goes further');
-step('track: "corre" jogs, "Flash corre" zooms further, new race new order');
+const through = move(zoom.race, 'super');
+assert.equal(through.fx, 'zoom', 'at an obstacle Flash corre runs, it does not jump');
+assert.ok(through.race.cleared[0] && through.race.x > zoom.race.x + 60, 'straight through to the next one');
+assert.equal(move(zoom.race, 'pula').fx, 'hop');
+step('track: "corre" jogs, "Flash corre" zooms further (through obstacles too), new race new order');
 
 // ---------- the page ----------
 const root = new URL('../../', import.meta.url).pathname; // the repo: the game imports lib/voice/
@@ -63,6 +74,12 @@ function fakeSR() {
       if (last && !last.isFinal) this.list[this.list.length - 1] = r;
       else this.list.push(r);
       this.onresult?.({ results: this.list, resultIndex: this.list.length - 1 });
+    }
+    // iOS: the session's text as it stands now, rewritten from the start; one
+    // result, or re-segmented into several.
+    set(texts, final) {
+      this.list = texts.map((t, i) => Object.assign([{ transcript: t, confidence: 0.9 }], { isFinal: final || i < texts.length - 1 }));
+      this.onresult?.({ results: this.list, resultIndex: 0 });
     }
     end() {
       this.onend?.();
@@ -160,7 +177,7 @@ b = await body(p);
 await say(p, 'corre', false);
 await say(p, 'corre Flash', false);
 await say(p, 'corre Flash', true);
-await p.waitForFunction(() => document.body.dataset.fx === 'zoom' || document.body.dataset.fx === 'vault', null, { timeout: 4000 });
+await p.waitForFunction(() => document.body.dataset.fx === 'zoom', null, { timeout: 4000 });
 await settled(p);
 step('"corre Flash": the late Flash makes it super');
 
@@ -212,6 +229,55 @@ const log = await p.textContent('.dbg-log');
 assert.match(log, /fire super \(voice\)/);
 assert.match(log, /result \[0 final\] "Flash corre"/);
 step('?debug log shows recognition and commands');
+await p.close();
+
+// ---------- iOS: one result that keeps growing AND gets rewritten ----------
+// [the session's text now, what that adds]. Every "Flash corre" said fires one
+// super; none fires as a plain corre or a jump.
+p = await open(browser, { width: 1180, height: 820 }, '?debug');
+await p.click('#start');
+await p.waitForFunction(() => document.body.classList.contains('ear-on'));
+const IOS = [
+  [['Flash'], null],
+  [['Flash corre'], 'super'],
+  [['Flash corre flash'], null],
+  [['Flash corre, Flash corre'], 'super'], // punctuation rewritten in, the verb appended
+  [['Flash corre'], null], // the repeat merged away: shorter
+  [['Flash corre flash'], null],
+  [['Flash corre flash corre'], 'super'], // the count is back where it was: still new
+  [['Flash corre corre flash corre'], 'super'], // a "flash" dropped in the middle, one appended
+  'party',
+  [['Flash corre flash', 'corre Flash corre'], 'super'], // re-segmented into two results
+  [['Flash corre flash', 'corre Flash corre'], null, true], // final, same words
+  [['Flash corre flash', 'corre Flash corre', 'Flashcorre'], 'super'], // written as one word
+  [['Flash corre flash', 'corre Flash corre', 'Flashcorre corre'], 'corre'], // a plain corre is plain
+];
+let supers = 0;
+for (const ev of IOS) {
+  if (ev === 'party') {
+    await p.waitForFunction(() => document.body.dataset.phase === 'play' && document.body.dataset.runs === '1', null, { timeout: 8000 });
+    continue;
+  }
+  const [texts, want, final] = ev;
+  const before = await body(p);
+  await p.evaluate(([t, f]) => window.__sr.set(t, f), [texts, !!final]);
+  await p.waitForTimeout(150);
+  const b3 = await body(p);
+  const label = `"${texts.join(' | ')}"`;
+  if (!want) {
+    assert.equal(b3.fired, before.fired, `${label}: nothing new`);
+    continue;
+  }
+  assert.equal(Number(b3.fired), Number(before.fired || 0) + 1, `${label}: fires once`);
+  assert.ok(want === 'super' ? b3.fx === 'zoom' : ['jog', 'bump'].includes(b3.fx), `${label}: ${want}, got ${b3.fx}`);
+  if (want === 'super') supers++;
+  await p.waitForFunction(() => !document.body.classList.contains('speed') && (document.body.dataset.goal || document.body.dataset.phase !== 'play'), null, { timeout: 5000 });
+  await p.waitForTimeout(150);
+}
+const iosLog = await p.evaluate(() => document.querySelector('.dbg-log').textContent);
+assert.match(iosLog, /combine corre@\d+ flash-before -> super \(flash before it\)/);
+assert.match(iosLog, /rewritten shorter|nothing past/);
+step(`iOS-style rewritten transcript: ${supers} "Flash corre" -> ${supers} supers, the plain corre jogs; every decision in ?debug`);
 await p.close();
 await browser.close();
 

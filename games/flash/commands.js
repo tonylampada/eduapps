@@ -91,6 +91,17 @@ export function wordOf(word) {
   return null;
 }
 
+// "flashcorre": the recognizer sometimes writes the two words as one.
+function glued(word) {
+  if (word.length < 8) return null;
+  for (let i = 4; i <= word.length - 4; i++) {
+    const a = wordOf(word.slice(0, i));
+    const b = a === 'flash' && wordOf(word.slice(i));
+    if (b && b !== 'flash') return [a, b];
+  }
+  return null;
+}
+
 // Every known word in an utterance, in order: "Flash, corre!" -> ['flash', 'corre'].
 // Kept as single words so a growing interim result ("corre" -> "corre Flash")
 // still brings the late "flash" as something new.
@@ -99,7 +110,11 @@ export function spot(text) {
   const out = [];
   for (let i = 0; i < words.length; i++) {
     const w = wordOf(words[i]);
-    if (!w) continue;
+    if (!w) {
+      const two = glued(words[i]);
+      if (two) out.push(...two);
+      continue;
+    }
     if (w === 'para' && words[i] === 'para' && i > 0 && !CALLS.has(words[i - 1]) && !wordOf(words[i - 1])) continue;
     out.push(w);
   }
@@ -109,17 +124,29 @@ export function spot(text) {
 export const ARM_MS = 2500; // "Flash ..." then the verb, still the same breath
 export const LATE_MS = 1200; // "corre ... Flash": the verb already went, Flash upgrades it
 
+const VERB = new Set(['corre', 'pula']);
+
+// Around the verb at items[k], in the same text: "Flash, corre!" (a "flash"
+// right before it) or "corre, Flash!" (right after it, and no verb after that
+// "flash" to claim it: "corre, Flash corre" is a corre then a Flash corre).
+export function flashNear(items, k) {
+  return { before: items[k - 1] === 'flash', after: items[k + 1] === 'flash' && !VERB.has(items[k + 2]) };
+}
+
 // Words in, commands out. Stateful (when the last "flash" and the last plain
-// verb were heard), so one per game. upgrade: true when a "flash" came after its verb.
+// verb were heard), so one per game. The text decides first (near, from
+// flashNear): the recognizer may hand over the verb in a later result than its
+// "flash", or rewrite that "flash" away, and the clock alone then misses it.
+// -> { cmd, why, upgrade } (upgrade: a "flash" came after its verb), or null.
 export function createCombiner() {
   let armedAt = -1e9;
   let plain = null; // { cmd, at } the last corre/pula that went out without Flash
-  return (word, now) => {
+  return (word, now, near = {}) => {
     if (word === 'flash') {
       if (plain && now - plain.at < LATE_MS) {
-        const cmd = plain.cmd === 'corre' ? 'super' : 'superpula';
+        const up = { cmd: plain.cmd === 'corre' ? 'super' : 'superpula', upgrade: true, why: `flash ${now - plain.at} ms after a plain ${plain.cmd}` };
         plain = null;
-        return { cmd, upgrade: true };
+        return up;
       }
       armedAt = now;
       return null;
@@ -127,15 +154,17 @@ export function createCombiner() {
     if (word === 'para') {
       armedAt = -1e9;
       plain = null;
-      return { cmd: 'para' };
+      return { cmd: 'para', why: 'para' };
     }
-    if (now - armedAt < ARM_MS) {
+    const armed = now - armedAt < ARM_MS;
+    if (near.before || near.after || armed) {
+      const why = near.before ? 'flash before it' : near.after ? 'flash after it' : `flash heard ${now - armedAt} ms ago`;
       armedAt = -1e9;
       plain = null;
-      return { cmd: word === 'corre' ? 'super' : 'superpula' };
+      return { cmd: word === 'corre' ? 'super' : 'superpula', why };
     }
     plain = { cmd: word, at: now };
-    return { cmd: word };
+    return { cmd: word, why: 'no flash near it' };
   };
 }
 

@@ -15,6 +15,7 @@ export default defineConfig({
         foguete:       resolve(__dirname, 'games/foguete/index.html'),
         casa:          resolve(__dirname, 'games/casa/index.html'),
         monstro:       resolve(__dirname, 'games/monstro/index.html'),
+        flash:         resolve(__dirname, 'games/flash/index.html'),
       },
     },
   },

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#9ED8FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Flash">
+  <title>Corrida do Flash</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23D7262E'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%23FFD23F'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body data-phase="start">
+
+<a class="back" href="../../" aria-label="Voltar">←</a>
+
+<main class="app">
+  <div id="scene" class="scene">
+    <div class="sun"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div id="hills" class="hills"></div>
+    <div class="ground"></div>
+    <div class="streaks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div id="world" class="world">
+      <div class="road"></div>
+      <div class="start-line"></div>
+      <div id="ob-0" class="ob"></div>
+      <div id="ob-1" class="ob"></div>
+      <div id="ob-2" class="ob"></div>
+      <div id="finish" class="finish"></div>
+      <svg id="trophy" class="trophy" viewBox="0 0 60 70" aria-hidden="true">
+        <path d="M14 6h32v14a16 16 0 0 1-32 0z" fill="#F5B82E" stroke="#C98A0E" stroke-width="2"/>
+        <path d="M14 10H6q0 14 10 16M46 10h8q0 14-10 16" fill="none" stroke="#F5B82E" stroke-width="4"/>
+        <rect x="26" y="34" width="8" height="12" fill="#E0A21E"/>
+        <rect x="16" y="46" width="28" height="8" rx="2" fill="#C98A0E"/>
+        <rect x="10" y="54" width="40" height="12" rx="3" fill="#8B5A2B"/>
+        <path d="M22 12q2 10 6 12" fill="none" stroke="#FFF3B0" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+
+      <div id="car" class="car">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path d="M6 40q0-12 14-14l20-2 14-14h26l16 14 16 2q6 2 6 14z" fill="#3E86D6"/>
+          <path d="M58 14h20l12 11H48z" fill="#CFE9FF"/>
+          <circle cx="68" cy="32" r="7" fill="#fff"/>
+          <text x="68" y="36" font-size="10" font-weight="900" text-anchor="middle" fill="#1F55A8" font-family="system-ui">7</text>
+          <rect x="2" y="36" width="116" height="6" rx="3" fill="#1F55A8"/>
+          <g class="wheel" style="transform-origin:30px 44px"><circle cx="30" cy="44" r="10" fill="#2B2B2B"/><circle cx="30" cy="44" r="4" fill="#BBB"/><rect x="29" y="35" width="2" height="18" fill="#777"/></g>
+          <g class="wheel" style="transform-origin:94px 44px"><circle cx="94" cy="44" r="10" fill="#2B2B2B"/><circle cx="94" cy="44" r="4" fill="#BBB"/><rect x="93" y="35" width="2" height="18" fill="#777"/></g>
+        </svg>
+      </div>
+
+      <div id="hero" class="hero">
+        <div class="trail" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="hero-move">
+          <!-- An original round super-kid: red suit and hood with a mask, a
+               yellow bolt on the chest, a yellow scarf. -->
+          <svg class="hero-svg" viewBox="0 0 100 130" aria-hidden="true">
+            <path class="scarf" d="M40 52q-18 2-30 12q12 0 18 4q-10 4-16 12q16-4 30-18z" fill="#FFD23F"/>
+            <g class="limb arm back-arm"><rect x="44" y="56" width="10" height="30" rx="5" fill="#A81C22"/></g>
+            <g class="limb leg back-leg"><rect x="42" y="84" width="12" height="32" rx="6" fill="#A81C22"/><rect x="40" y="110" width="18" height="10" rx="5" fill="#7A1218"/></g>
+            <rect x="34" y="50" width="34" height="42" rx="16" fill="#D7262E"/>
+            <path d="M54 56 44 72h8l-4 14 12-18h-8l4-12z" fill="#FFD23F" stroke="#C98A0E" stroke-width="1"/>
+            <rect x="34" y="84" width="34" height="5" rx="2" fill="#FFD23F"/>
+            <g class="limb leg front-leg"><rect x="48" y="84" width="12" height="32" rx="6" fill="#D7262E"/><rect x="46" y="110" width="18" height="10" rx="5" fill="#A81C22"/></g>
+            <g class="head">
+              <circle cx="54" cy="30" r="24" fill="#D7262E"/>
+              <path d="M58 18q18 2 18 16q0 14-14 16q-10 0-12-8z" fill="#F1C7A0"/>
+              <path d="M52 24q12-6 26 0v9q-13-4-26 0z" fill="#A81C22"/>
+              <ellipse class="eye" cx="64" cy="28" rx="4" ry="3.6" fill="#fff"/>
+              <circle cx="65.5" cy="28" r="2" fill="#2B2B2B"/>
+              <path d="M62 42q6 4 11 0" fill="none" stroke="#2B2B2B" stroke-width="2" stroke-linecap="round"/>
+            </g>
+            <g class="limb arm front-arm"><rect x="52" y="56" width="10" height="30" rx="5" fill="#D7262E"/><circle cx="57" cy="86" r="6" fill="#D7262E"/></g>
+          </svg>
+          <div class="sparkle" aria-hidden="true">✦ ★ ✦</div>
+          <div class="chhh" aria-hidden="true">chhhh!</div>
+        </div>
+      </div>
+    </div>
+
+    <p id="bubble" class="bubble" aria-live="polite"></p>
+
+    <div class="corner">
+      <div id="ear" class="ear" role="img" aria-label="Estou ouvindo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.4-3.6 4.4-3.6 7.6a3 3 0 0 1-5.7 1.3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.7-2.1 2.2-2.1 3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <button id="mute" class="mute" type="button" aria-pressed="false" aria-label="Sons ligados">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>
+          <path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path class="cross" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <p id="tap-hint" class="tap-hint" hidden>Toque na tela para eu ouvir</p>
+    <p id="note" class="note" hidden></p>
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+  </div>
+
+  <nav id="cmds" class="cmds" aria-label="Comandos"></nav>
+</main>
+
+<!-- One tap starts the mic (iOS only grants it inside a tap). -->
+<button id="start" class="start" type="button">
+  <span class="start-hero">⚡</span>
+  <span class="start-title">Corrida do Flash</span>
+  <span class="start-go">▶ Toque para começar</span>
+  <span class="start-adult">Depois é só falar: “corre!”, “pula!”, “para!”… e com “Flash” junto ele fica superrápido: “Flash corre!”. Fazer “chhhhh” também dá velocidade. O jogo escuta o tempo todo; os botões embaixo falam a palavra.</span>
+</button>
+
+<!-- The mic stopped and only a tap can restart it (iOS): an invisible button
+     over the whole screen. Shown through `hidden`, so it never sits in the layout. -->
+<button id="tap-resume" class="tap-resume" type="button" aria-label="Toque na tela para eu ouvir" hidden></button>
+
+</body>
+</html>
